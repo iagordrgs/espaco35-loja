@@ -1,0 +1,41 @@
+@import "tailwindcss";
+
+/* ===========================================================
+   ESPAÇO 35 — identidade
+   preto #0B0B0B · off-white #F5F2ED · champagne gold #D6B07A
+   =========================================================== */
+
+:root {
+  color-scheme: dark;
+  --background: #0b0b0b;
+  --foreground: #f5f2ed;
+  --brand: #d6b07a;
+  --brand-dark: #e6cea8; /* hover dos botões dourados (ouro claro) */
+  --accent: #e6cea8;
+  --muted: #9a958c;
+  --card: #161616;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-brand: var(--brand);
+  --color-brand-dark: var(--brand-dark);
+  --color-accent: var(--accent);
+  --color-muted: var(--muted);
+  --color-card: var(--card);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--brand);
+  color: var(--background);
+}
