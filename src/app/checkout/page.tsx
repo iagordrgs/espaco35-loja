@@ -56,7 +56,7 @@ export default function CheckoutPage() {
 
       <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_320px]">
         <form onSubmit={handleSubmit} className="space-y-6">
-          <fieldset className="space-y-4 rounded-xl border border-white/5 bg-card p-6">
+          <fieldset className="space-y-4 rounded-xl border border-[var(--line)] bg-card p-6">
             <legend className="px-2 font-semibold">Dados de entrega</legend>
             <Field label="Nome completo" name="nome" />
             <Field label="E-mail" name="email" type="email" />
@@ -71,7 +71,7 @@ export default function CheckoutPage() {
             </div>
           </fieldset>
 
-          <fieldset className="space-y-2 rounded-xl border border-white/5 bg-card p-6">
+          <fieldset className="space-y-2 rounded-xl border border-[var(--line)] bg-card p-6">
             <legend className="px-2 font-semibold">Pagamento</legend>
             <p className="text-sm text-muted">
               💳 Checkout demonstrativo. A integração de pagamento (ex.: Stripe,
@@ -87,7 +87,7 @@ export default function CheckoutPage() {
           </button>
         </form>
 
-        <aside className="h-fit rounded-xl border border-white/5 bg-card p-6">
+        <aside className="h-fit rounded-xl border border-[var(--line)] bg-card p-6">
           <h2 className="text-lg font-bold">Seu pedido</h2>
           <ul className="mt-4 space-y-3 text-sm">
             {items.map((i) => (
@@ -102,7 +102,7 @@ export default function CheckoutPage() {
               </li>
             ))}
           </ul>
-          <div className="mt-4 flex justify-between border-t border-white/10 pt-4 text-lg font-bold">
+          <div className="mt-4 flex justify-between border-t border-[var(--line)] pt-4 text-lg font-bold">
             <span>Total</span>
             <span className="text-brand">{formatPrice(totalPrice)}</span>
           </div>
@@ -128,7 +128,7 @@ function Field({
         name={name}
         type={type}
         required
-        className="mt-1 w-full rounded-lg border border-white/15 bg-background px-3 py-2 outline-none focus:border-brand focus:ring-1 focus:ring-brand"
+        className="mt-1 w-full rounded-lg border border-[var(--line)] bg-background px-3 py-2 outline-none focus:border-brand focus:ring-1 focus:ring-brand"
       />
     </label>
   );
