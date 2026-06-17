@@ -41,6 +41,36 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Sobre a marca */}
+      <section className="border-y border-brand/15 bg-card/40">
+        <div className="mx-auto max-w-3xl px-4 py-16 text-center">
+          <span className="text-xs font-semibold uppercase tracking-[0.25em] text-brand">
+            A marca
+          </span>
+          <h2 className="mt-4 text-2xl font-bold leading-snug sm:text-3xl">
+            Uma curadoria feminina, exclusivamente no 35
+          </h2>
+          <p className="mt-5 text-foreground/70 leading-relaxed">
+            A Espaço 35 nasceu de uma ideia simples: reunir, em um só lugar,
+            calçados femininos lindos e exclusivamente no tamanho 35. Cada par é
+            novo, original e vem na caixa — selecionado a dedo entre marcas como
+            Mississipi, Pink Cats e Campesí.
+          </p>
+          <p className="mt-4 text-foreground/70 leading-relaxed">
+            Trabalhamos com coleções e últimos pares: pouca quantidade de cada
+            modelo, muita atenção ao detalhe. Se você calça 35, aqui é o seu
+            lugar.
+          </p>
+          <div className="mt-8 flex flex-wrap justify-center gap-x-8 gap-y-3 text-sm font-medium uppercase tracking-[0.15em] text-brand">
+            <span>Originais e com caixa</span>
+            <span className="text-brand/40">·</span>
+            <span>Pares únicos</span>
+            <span className="text-brand/40">·</span>
+            <span>Envio para todo o Brasil</span>
+          </div>
+        </div>
+      </section>
+
       {/* Categorias */}
       <section className="mx-auto max-w-6xl px-4 py-14">
         <h2 className="mb-6 text-2xl font-bold">Compre por categoria</h2>
