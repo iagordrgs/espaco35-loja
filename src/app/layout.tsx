@@ -19,9 +19,9 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Espaço 35 | Boutique de Calçados Femininos · Fortaleza",
+  title: "Espaço 35 | Calçados Femininos Tamanho 35 · Fortaleza",
   description:
-    "Boutique digital de calçados femininos, exclusivamente tamanho 35. Curadoria de modelos novos, originais e com caixa.",
+    "Loja de calçados femininos só tamanho 35. Modelos novos e originais das marcas Mississipi, Pink Cats e Campesí, com caixa.",
 };
 
 export default function RootLayout({

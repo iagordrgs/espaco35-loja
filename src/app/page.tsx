@@ -26,7 +26,7 @@ const beneficios = [
 const depoimentos = [
   { txt: "Achar sapato lindo no 35 era impossível. Aqui virou meu cantinho favorito.", nome: "Marina", cidade: "Fortaleza" },
   { txt: "Chegou novinho, na caixa e exatamente como na foto. Atendimento um amor.", nome: "Letícia", cidade: "Eusébio" },
-  { txt: "Curadoria impecável. Dá pra ver que cada par é escolhido com carinho.", nome: "Camila", cidade: "Caucaia" },
+  { txt: "Cada par é escolhido com carinho, dá pra ver. Já virei cliente fiel.", nome: "Camila", cidade: "Caucaia" },
 ];
 
 const igFotos = [16, 32, 45, 47, 63, 55];
@@ -41,14 +41,14 @@ export default function Home() {
         <div className="mx-auto grid max-w-6xl items-center gap-14 md:grid-cols-2">
           <div>
             <span className="text-xs font-semibold uppercase tracking-[0.28em] text-brand">
-              Boutique digital · Fortaleza
+              Calçados femininos · Fortaleza
             </span>
             <h1 className="mt-6 font-serif text-4xl leading-tight sm:text-5xl">
               Calçados femininos. Exclusivamente no tamanho 35.
             </h1>
             <p className="mt-6 max-w-md text-[16.5px] text-muted">
-              Curadoria de modelos novos, originais e com caixa. Poucas
-              unidades de cada par — viu, gostou, é seu.
+              Modelos novos e originais das marcas Mississipi, Pink Cats e
+              Campesí. Poucas unidades de cada par — viu, gostou, é seu.
             </p>
             <div className="mt-9 flex flex-wrap gap-3">
               <Link
@@ -77,7 +77,7 @@ export default function Home() {
               priority
             />
             <span className="absolute bottom-5 left-5 rounded-xl bg-card/90 px-4 py-2.5 text-[12.5px] tracking-wide backdrop-blur">
-              Tamanho 35 · curadoria feminina
+              Tamanho 35 · novos e originais
             </span>
           </div>
         </div>
@@ -122,7 +122,7 @@ export default function Home() {
       <section className="mx-auto max-w-6xl px-6 pb-20">
         <div className="mb-10 flex items-end justify-between">
           <div>
-            <span className="text-xs font-semibold uppercase tracking-[0.28em] text-brand">Seleção</span>
+            <span className="text-xs font-semibold uppercase tracking-[0.28em] text-brand">Novidades</span>
             <h2 className="mt-3 font-serif text-3xl">Em destaque</h2>
           </div>
           <Link href="/produtos" className="text-sm font-medium text-brand hover:underline">
@@ -140,14 +140,15 @@ export default function Home() {
       <section className="bg-nude">
         <div className="mx-auto grid max-w-6xl items-center gap-14 px-6 py-24 md:grid-cols-2">
           <div className="relative aspect-[4/5] overflow-hidden rounded-2xl bg-card">
-            <Image src="/imagens/espaco35-66.jpg" alt="Curadoria Espaço 35" fill sizes="(max-width: 768px) 100vw, 50vw" className="object-cover" />
+            <Image src="/imagens/espaco35-66.jpg" alt="Espaço 35 calçados" fill sizes="(max-width: 768px) 100vw, 50vw" className="object-cover" />
           </div>
           <div>
-            <span className="text-xs font-semibold uppercase tracking-[0.28em] text-brand">A marca</span>
-            <h2 className="mt-4 font-serif text-3xl leading-snug">Curadoria feita para quem calça 35.</h2>
+            <span className="text-xs font-semibold uppercase tracking-[0.28em] text-brand">Sobre a loja</span>
+            <h2 className="mt-4 font-serif text-3xl leading-snug">Sapato bonito no 35 a gente tem.</h2>
             <p className="mt-5 max-w-md text-muted">
-              Selecionamos cuidadosamente cada modelo para mulheres que
-              encontram dificuldade em achar calçados bonitos no tamanho 35.
+              A gente sabe como é difícil achar sapato bonito no tamanho 35.
+              Por isso a Espaço 35 é só disso: modelos novos e originais,
+              sempre no 35.
             </p>
             <p className="mt-4 max-w-md text-muted">
               Todos os pares são novos, originais e enviados com caixa — das
