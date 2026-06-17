@@ -38,7 +38,7 @@ export default function CarrinhoPage() {
             return (
               <li
                 key={key}
-                className="flex gap-4 rounded-xl border border-white/5 bg-card p-4"
+                className="flex gap-4 rounded-xl border border-[var(--line)] bg-card p-4"
               >
                 <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-lg bg-white">
                   <Image
@@ -69,7 +69,7 @@ export default function CarrinhoPage() {
                     Tam. {item.size} · {item.color}
                   </p>
                   <div className="mt-auto flex items-center justify-between pt-2">
-                    <div className="inline-flex items-center rounded-lg border border-white/15">
+                    <div className="inline-flex items-center rounded-lg border border-[var(--line)]">
                       <button
                         type="button"
                         onClick={() => setQuantity(key, item.quantity - 1)}
@@ -101,7 +101,7 @@ export default function CarrinhoPage() {
         </ul>
 
         {/* Resumo */}
-        <aside className="h-fit rounded-xl border border-white/5 bg-card p-6">
+        <aside className="h-fit rounded-xl border border-[var(--line)] bg-card p-6">
           <h2 className="text-lg font-bold">Resumo</h2>
           <div className="mt-4 space-y-2 text-sm">
             <div className="flex justify-between">
@@ -113,7 +113,7 @@ export default function CarrinhoPage() {
               <span className="text-foreground/70">A combinar</span>
             </div>
           </div>
-          <div className="mt-4 flex justify-between border-t border-white/10 pt-4 text-lg font-bold">
+          <div className="mt-4 flex justify-between border-t border-[var(--line)] pt-4 text-lg font-bold">
             <span>Total</span>
             <span className="text-brand">{formatPrice(totalPrice)}</span>
           </div>
