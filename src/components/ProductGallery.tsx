@@ -33,7 +33,7 @@ export default function ProductGallery({
   return (
     <div>
       {/* imagem principal */}
-      <div className="relative aspect-square overflow-hidden rounded-2xl border border-white/10 bg-white">
+      <div className="relative aspect-square overflow-hidden rounded-2xl border border-[var(--line)] bg-white">
         <Image
           src={images[i]}
           alt={alt}
@@ -77,7 +77,7 @@ export default function ProductGallery({
               type="button"
               onClick={() => setI(idx)}
               className={`relative h-20 w-20 overflow-hidden rounded-lg border bg-white transition ${
-                idx === i ? "border-brand" : "border-white/15 hover:border-brand/50"
+                idx === i ? "border-brand" : "border-[var(--line)] hover:border-brand/50"
               }`}
             >
               <Image src={src} alt={`${alt} ${idx + 1}`} fill sizes="80px" className="object-cover" />

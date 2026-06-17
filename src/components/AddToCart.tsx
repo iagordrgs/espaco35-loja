@@ -45,7 +45,7 @@ export default function AddToCart({ product }: { product: Product }) {
               className={`rounded-full border px-4 py-1.5 text-sm transition ${
                 color === c
                   ? "border-brand bg-brand text-background"
-                  : "border-white/15 hover:border-brand/60"
+                  : "border-[var(--line)] hover:border-brand/60"
               }`}
             >
               {c}
@@ -75,7 +75,7 @@ export default function AddToCart({ product }: { product: Product }) {
               className={`h-10 w-12 rounded-lg border text-sm font-medium transition ${
                 size === s
                   ? "border-brand bg-brand text-background"
-                  : "border-white/15 hover:border-brand/60"
+                  : "border-[var(--line)] hover:border-brand/60"
               }`}
             >
               {s}
@@ -86,7 +86,7 @@ export default function AddToCart({ product }: { product: Product }) {
 
       <div>
         <label className="text-sm font-semibold">Quantidade</label>
-        <div className="mt-2 inline-flex items-center rounded-lg border border-white/15">
+        <div className="mt-2 inline-flex items-center rounded-lg border border-[var(--line)]">
           <button
             type="button"
             onClick={() => setQuantity((q) => Math.max(1, q - 1))}

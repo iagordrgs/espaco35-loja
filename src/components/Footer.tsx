@@ -1,73 +1,62 @@
 import Link from "next/link";
-import { categories } from "@/data/products";
+
+const WA = "https://wa.me/5585992442091";
+const IG = "https://instagram.com/espaco35calcados";
 
 export default function Footer() {
   return (
-    <footer className="mt-16 border-t border-brand/25 bg-card text-foreground/80">
-      <div className="mx-auto grid max-w-6xl gap-8 px-4 py-12 sm:grid-cols-3">
-        <div>
-          <div className="flex items-baseline gap-2">
-            <span className="font-extrabold tracking-[0.25em]">ESPAÇO</span>
-            <span className="font-extrabold tracking-[0.25em] text-brand">
-              35
+    <footer className="bg-foreground text-[#E9E3DB]">
+      <div className="mx-auto max-w-6xl px-6 py-16">
+        <div className="grid gap-10 sm:grid-cols-2 md:grid-cols-4">
+          <div>
+            <span className="font-serif text-xl tracking-[0.18em] text-white">
+              ESPAÇO 35
             </span>
+            <p className="mt-4 text-[13.5px] leading-7 text-[#C9C0B5]">
+              Boutique digital de calçados femininos, exclusivamente tamanho
+              35. Pares novos, originais e com caixa.
+            </p>
           </div>
-          <p className="mt-3 text-sm text-foreground/60">
-            Calçados femininos · exclusivamente tamanho 35. Pares novos,
-            originais e com caixa.
-          </p>
+
+          <div>
+            <h4 className="font-serif text-lg text-white">Categorias</h4>
+            <ul className="mt-4 space-y-2 text-[13.5px] text-[#C9C0B5]">
+              <li><Link href="/produtos?categoria=sandalias" className="hover:text-brand">Sandálias</Link></li>
+              <li><Link href="/produtos?categoria=tenis" className="hover:text-brand">Tênis</Link></li>
+              <li><Link href="/produtos?categoria=sapatos" className="hover:text-brand">Sapatos</Link></li>
+              <li><Link href="/produtos" className="hover:text-brand">Toda a coleção</Link></li>
+            </ul>
+          </div>
+
+          <div>
+            <h4 className="font-serif text-lg text-white">Contato</h4>
+            <ul className="mt-4 space-y-2 text-[13.5px] text-[#C9C0B5]">
+              <li>Fortaleza – CE</li>
+              <li><a href={IG} target="_blank" rel="noopener noreferrer" className="hover:text-brand">@espaco35calcados</a></li>
+              <li>Seg a Sáb · 9h às 18h</li>
+            </ul>
+          </div>
+
+          <div>
+            <h4 className="font-serif text-lg text-white">Fale com a gente</h4>
+            <p className="mt-4 text-[13.5px] leading-7 text-[#C9C0B5]">
+              Tire dúvidas e garanta seu par direto pelo WhatsApp.
+            </p>
+            <a
+              href={WA}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-4 inline-block rounded-full bg-brand px-6 py-3 text-[13px] font-semibold text-white transition hover:bg-brand-dark"
+            >
+              Chamar no WhatsApp
+            </a>
+          </div>
         </div>
 
-        <div>
-          <h3 className="text-sm font-semibold uppercase tracking-wide text-brand">
-            Categorias
-          </h3>
-          <ul className="mt-3 space-y-2 text-sm">
-            {categories.map((c) => (
-              <li key={c.key}>
-                <Link
-                  href={`/produtos?categoria=${c.key}`}
-                  className="text-foreground/60 transition hover:text-brand"
-                >
-                  {c.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
+        <div className="mt-14 border-t border-[var(--line)] pt-6 text-center text-[12px] tracking-wide text-[#9a9087]">
+          © {new Date().getFullYear()} Espaço 35 · Pares originais, novos e com
+          caixa · Sujeito a disponibilidade
         </div>
-
-        <div>
-          <h3 className="text-sm font-semibold uppercase tracking-wide text-brand">
-            Atendimento
-          </h3>
-          <ul className="mt-3 space-y-2 text-sm text-foreground/60">
-            <li>
-              <a
-                href="https://wa.me/5585992442091"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="transition hover:text-brand"
-              >
-                WhatsApp (85) 99244-2091
-              </a>
-            </li>
-            <li>
-              <a
-                href="https://instagram.com/espaco35calcados"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="transition hover:text-brand"
-              >
-                @espaco35calcados
-              </a>
-            </li>
-            <li>Fortaleza – CE</li>
-          </ul>
-        </div>
-      </div>
-      <div className="border-t border-white/10 py-4 text-center text-xs text-foreground/40">
-        © {new Date().getFullYear()} Espaço 35 · Pares originais, novos e com
-        caixa · Sujeito a disponibilidade
       </div>
     </footer>
   );
