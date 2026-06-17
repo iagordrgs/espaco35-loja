@@ -16,6 +16,11 @@ export default function ProductCard({ product }: { product: Product }) {
           sizes="(max-width: 768px) 50vw, 25vw"
           className="object-cover transition duration-300 group-hover:scale-105"
         />
+        {product.lastUnits && (
+          <span className="absolute left-3 top-3 rounded-full bg-brand/95 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-background shadow">
+            Últimas unidades
+          </span>
+        )}
       </div>
       <div className="flex flex-1 flex-col gap-1 p-4">
         <span className="text-xs uppercase tracking-[0.15em] text-brand">
