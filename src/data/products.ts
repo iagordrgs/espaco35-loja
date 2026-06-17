@@ -10,7 +10,7 @@ export type Product = {
   description: string;
   sizes: number[];
   colors: string[];
-  image: string;
+  images: string[];
   featured?: boolean; // aparece na seção "Destaques" da home
   lastUnits?: boolean; // mostra o selo "Últimas unidades" no card
 };
@@ -44,11 +44,10 @@ export const products: Product[] = [
     category: "sapatos",
     price: 69.9,
     compareAtPrice: 100,
-    description:
-      "Sapatilha slingback prata com biqueira dourada. Elegante e versátil.",
+    description: "Sapatilha slingback prata com biqueira dourada. Elegante e versátil.",
     sizes: SIZE,
     colors: ["Prata"],
-    image: "/imagens/espaco35-01.jpg",
+    images: ["/imagens/espaco35-01.jpg"],
     featured: true,
     lastUnits: true,
   },
@@ -59,11 +58,10 @@ export const products: Product[] = [
     category: "sandalias",
     price: 69.9,
     compareAtPrice: 100,
-    description:
-      "Rasteira de tiras finas com aplique dourado. Leve e charmosa.",
+    description: "Rasteira de tiras finas com aplique dourado. Leve e charmosa.",
     sizes: SIZE,
     colors: ["Mostarda"],
-    image: "/imagens/espaco35-02.jpg",
+    images: ["/imagens/espaco35-02.jpg"],
   },
   {
     slug: "rasteira-gladiadora-caramelo",
@@ -75,7 +73,7 @@ export const products: Product[] = [
     description: "Rasteira estilo gladiadora caramelo com detalhe em strass.",
     sizes: SIZE,
     colors: ["Caramelo"],
-    image: "/imagens/espaco35-03.jpg",
+    images: ["/imagens/espaco35-03.jpg"],
   },
   {
     slug: "tenis-casual-caramelo",
@@ -87,7 +85,7 @@ export const products: Product[] = [
     description: "Tênis casual caramelo com listra preta. Conforto pro dia a dia.",
     sizes: SIZE,
     colors: ["Caramelo"],
-    image: "/imagens/espaco35-04.jpg",
+    images: ["/imagens/espaco35-04.jpg"],
   },
   {
     slug: "sandalia-salto-baixo-caramelo",
@@ -96,11 +94,10 @@ export const products: Product[] = [
     category: "sandalias",
     price: 69.9,
     compareAtPrice: 100,
-    description:
-      "Sandália de salto bloco baixo caramelo com tira metalizada.",
+    description: "Sandália de salto bloco baixo caramelo com tira metalizada.",
     sizes: SIZE,
     colors: ["Caramelo"],
-    image: "/imagens/espaco35-05.jpg",
+    images: ["/imagens/espaco35-05.jpg"],
   },
   {
     slug: "rasteira-dourada-trancada",
@@ -109,11 +106,10 @@ export const products: Product[] = [
     category: "sandalias",
     price: 69.9,
     compareAtPrice: 100,
-    description:
-      "Rasteira slide dourada com tiras trançadas. Conforto inteligente.",
+    description: "Rasteira slide dourada com tiras trançadas. Conforto inteligente.",
     sizes: SIZE,
     colors: ["Dourado"],
-    image: "/imagens/espaco35-06.jpg",
+    images: ["/imagens/espaco35-06.jpg"],
   },
   {
     slug: "mule-off-white",
@@ -122,11 +118,10 @@ export const products: Product[] = [
     category: "sapatos",
     price: 69.9,
     compareAtPrice: 100,
-    description:
-      "Mule fechado off-white com recorte em 'H'. Sofisticada e clean.",
+    description: "Mule fechado off-white com recorte em 'H'. Sofisticada e clean.",
     sizes: SIZE,
     colors: ["Off-White"],
-    image: "/imagens/espaco35-07.jpg",
+    images: ["/imagens/espaco35-07.jpg"],
     featured: true,
     lastUnits: true,
   },
@@ -137,11 +132,10 @@ export const products: Product[] = [
     category: "sandalias",
     price: 69.9,
     compareAtPrice: 100,
-    description:
-      "Sandália flatform caramelo de duas tiras com tachas douradas.",
+    description: "Sandália flatform caramelo de duas tiras com tachas douradas.",
     sizes: SIZE,
     colors: ["Caramelo"],
-    image: "/imagens/espaco35-08.jpg",
+    images: ["/imagens/espaco35-08.jpg"],
   },
   {
     slug: "sandalia-salto-taca-caramelo",
@@ -150,11 +144,10 @@ export const products: Product[] = [
     category: "sandalias",
     price: 69.9,
     compareAtPrice: 100,
-    description:
-      "Sandália de salto taça caramelo com tiras finas. Delicada e moderna.",
+    description: "Sandália de salto taça caramelo com tiras finas. Delicada e moderna.",
     sizes: SIZE,
     colors: ["Caramelo"],
-    image: "/imagens/espaco35-09.jpg",
+    images: ["/imagens/espaco35-09.jpg"],
   },
   {
     slug: "sandalia-salto-bloco-caramelo",
@@ -166,7 +159,7 @@ export const products: Product[] = [
     description: "Sandália de salto bloco caramelo com strass trançado.",
     sizes: SIZE,
     colors: ["Caramelo"],
-    image: "/imagens/espaco35-10.jpg",
+    images: ["/imagens/espaco35-10.jpg"],
   },
   {
     slug: "sandalia-salto-bloco-branca",
@@ -175,11 +168,10 @@ export const products: Product[] = [
     category: "sandalias",
     price: 69.9,
     compareAtPrice: 100,
-    description:
-      "Sandália de salto bloco branca com trança e strass. Perfeita pra eventos.",
+    description: "Sandália de salto bloco branca com trança e strass. Perfeita pra eventos.",
     sizes: SIZE,
     colors: ["Branco"],
-    image: "/imagens/espaco35-11.jpg",
+    images: ["/imagens/espaco35-11.jpg"],
   },
   {
     slug: "mocassim-tratorado-caramelo",
@@ -191,7 +183,7 @@ export const products: Product[] = [
     description: "Mocassim caramelo de solado tratorado. Estilo e atitude.",
     sizes: SIZE,
     colors: ["Caramelo"],
-    image: "/imagens/espaco35-12.jpg",
+    images: ["/imagens/espaco35-12.jpg"],
   },
   {
     slug: "tamanco-verde-fivela",
@@ -200,11 +192,10 @@ export const products: Product[] = [
     category: "sandalias",
     price: 69.9,
     compareAtPrice: 100,
-    description:
-      "Tamanco slide verde claro com fivela redonda. Tendência da estação.",
+    description: "Tamanco slide verde claro com fivela redonda. Tendência da estação.",
     sizes: SIZE,
     colors: ["Verde"],
-    image: "/imagens/espaco35-13.jpg",
+    images: ["/imagens/espaco35-13.jpg"],
   },
   {
     slug: "sandalia-salto-fino-dourada",
@@ -213,11 +204,10 @@ export const products: Product[] = [
     category: "sandalias",
     price: 69.9,
     compareAtPrice: 100,
-    description:
-      "Sandália de salto fino dourada. Brilho certo pra ocasiões especiais.",
+    description: "Sandália de salto fino dourada. Brilho certo pra ocasiões especiais.",
     sizes: SIZE,
     colors: ["Dourado"],
-    image: "/imagens/espaco35-14.jpg",
+    images: ["/imagens/espaco35-14.jpg"],
   },
   {
     slug: "sandalia-salto-taca-strass",
@@ -226,11 +216,10 @@ export const products: Product[] = [
     category: "sandalias",
     price: 69.9,
     compareAtPrice: 100,
-    description:
-      "Sandália de salto taça caramelo com tiras de strass. Glamour discreto.",
+    description: "Sandália de salto taça caramelo com tiras de strass. Glamour discreto.",
     sizes: SIZE,
     colors: ["Caramelo"],
-    image: "/imagens/espaco35-15.jpg",
+    images: ["/imagens/espaco35-15.jpg"],
   },
   {
     slug: "sandalia-salto-bloco-nude-medalhao",
@@ -239,11 +228,10 @@ export const products: Product[] = [
     category: "sandalias",
     price: 69.9,
     compareAtPrice: 100,
-    description:
-      "Sandália nude de salto bloco com medalhão artesanal e detalhe dourado. Elegância delicada.",
+    description: "Sandália nude de salto bloco com medalhão artesanal e detalhe dourado. Elegância delicada.",
     sizes: SIZE,
     colors: ["Nude"],
-    image: "/imagens/espaco35-16.jpg",
+    images: ["/imagens/espaco35-16.jpg"],
     featured: true,
     lastUnits: true,
   },
@@ -254,11 +242,10 @@ export const products: Product[] = [
     category: "tenis",
     price: 69.9,
     compareAtPrice: 100,
-    description:
-      "Tênis rosê com mesh respirável, cadarço bege e ilhós dourado. Leveza pro dia a dia.",
+    description: "Tênis rosê com mesh respirável, cadarço bege e ilhós dourado. Leveza pro dia a dia.",
     sizes: SIZE,
     colors: ["Rosê"],
-    image: "/imagens/espaco35-17.jpg",
+    images: ["/imagens/espaco35-17.jpg"],
     featured: true,
     lastUnits: true,
   },
@@ -269,11 +256,10 @@ export const products: Product[] = [
     category: "tenis",
     price: 69.9,
     compareAtPrice: 100,
-    description:
-      "Tênis branco com recortes off-white e friso dourado. Clássico que combina com tudo.",
+    description: "Tênis branco com recortes off-white e friso dourado. Clássico que combina com tudo.",
     sizes: SIZE,
     colors: ["Branco"],
-    image: "/imagens/espaco35-18.jpg",
+    images: ["/imagens/espaco35-18.jpg"],
   },
   {
     slug: "papete-anabela-bege-argola-dourada",
@@ -282,11 +268,10 @@ export const products: Product[] = [
     category: "sandalias",
     price: 69.9,
     compareAtPrice: 100,
-    description:
-      "Papete anabela bege com tiras em nó e argola dourada. Conforto com brilho na medida.",
+    description: "Papete anabela bege com tiras em nó e argola dourada. Conforto com brilho na medida.",
     sizes: SIZE,
     colors: ["Bege"],
-    image: "/imagens/espaco35-19.jpg",
+    images: ["/imagens/espaco35-19.jpg"],
   },
   {
     slug: "papete-dourada-tiras-argola",
@@ -295,11 +280,10 @@ export const products: Product[] = [
     category: "sandalias",
     price: 69.9,
     compareAtPrice: 100,
-    description:
-      "Papete flatform com tiras finas douradas e argola metálica. Iluminada e confortável.",
+    description: "Papete flatform com tiras finas douradas e argola metálica. Iluminada e confortável.",
     sizes: SIZE,
     colors: ["Dourado"],
-    image: "/imagens/espaco35-20.jpg",
+    images: ["/imagens/espaco35-20.jpg"],
     featured: true,
     lastUnits: true,
   },
@@ -310,11 +294,10 @@ export const products: Product[] = [
     category: "tenis",
     price: 69.9,
     compareAtPrice: 100,
-    description:
-      "Tênis branco matelassê com detalhes bege e coração metálico. Sofisticação esportiva.",
+    description: "Tênis branco matelassê com detalhes bege e coração metálico. Sofisticação esportiva.",
     sizes: SIZE,
     colors: ["Branco"],
-    image: "/imagens/espaco35-21.jpg",
+    images: ["/imagens/espaco35-21.jpg"],
   },
   {
     slug: "rasteira-cafe-discos-dourados",
@@ -323,11 +306,10 @@ export const products: Product[] = [
     category: "sandalias",
     price: 69.9,
     compareAtPrice: 100,
-    description:
-      "Rasteira café com discos em tons terrosos e dourados. Estilo boho elegante.",
+    description: "Rasteira café com discos em tons terrosos e dourados. Estilo boho elegante.",
     sizes: SIZE,
     colors: ["Marrom"],
-    image: "/imagens/espaco35-22.jpg",
+    images: ["/imagens/espaco35-22.jpg"],
   },
   {
     slug: "sandalia-baixa-tranca-dourada-strass",
@@ -336,11 +318,10 @@ export const products: Product[] = [
     category: "sandalias",
     price: 69.9,
     compareAtPrice: 100,
-    description:
-      "Sandália de salto baixo com tiras trançadas douradas e strass. Brilho discreto.",
+    description: "Sandália de salto baixo com tiras trançadas douradas e strass. Brilho discreto.",
     sizes: SIZE,
     colors: ["Nude"],
-    image: "/imagens/espaco35-23.jpg",
+    images: ["/imagens/espaco35-23.jpg"],
   },
   {
     slug: "mocassim-marrom-fivela",
@@ -352,7 +333,7 @@ export const products: Product[] = [
     description: "Mocassim marrom com fivela dourada. Clássico e confortável.",
     sizes: SIZE,
     colors: ["Marrom"],
-    image: "/imagens/espaco35-24.jpg",
+    images: ["/imagens/espaco35-24.jpg"],
   },
   {
     slug: "scarpin-off-white-salto-bloco",
@@ -364,7 +345,7 @@ export const products: Product[] = [
     description: "Scarpin off-white de salto bloco. Elegante e versátil.",
     sizes: SIZE,
     colors: ["Off-White"],
-    image: "/imagens/espaco35-25.jpg",
+    images: ["/imagens/espaco35-25.jpg"],
   },
   {
     slug: "sapatilha-preta-tira",
@@ -376,7 +357,7 @@ export const products: Product[] = [
     description: "Sapatilha preta com tira e bico fino. Atemporal.",
     sizes: SIZE,
     colors: ["Preto"],
-    image: "/imagens/espaco35-26.jpg",
+    images: ["/imagens/espaco35-26.jpg"],
   },
   {
     slug: "scarpin-caramelo-fivela-dourada",
@@ -388,7 +369,7 @@ export const products: Product[] = [
     description: "Scarpin caramelo bico fino com fivela dourada. Sofisticado.",
     sizes: SIZE,
     colors: ["Caramelo"],
-    image: "/imagens/espaco35-27.jpg",
+    images: ["/imagens/espaco35-27.jpg"],
     featured: true,
     lastUnits: true,
   },
@@ -402,7 +383,7 @@ export const products: Product[] = [
     description: "Rasteira off-white de tiras cruzadas. Leve e clean.",
     sizes: SIZE,
     colors: ["Off-White"],
-    image: "/imagens/espaco35-28.jpg",
+    images: ["/imagens/espaco35-28.jpg"],
   },
   {
     slug: "sandalia-marrom-flatform-fivela",
@@ -411,22 +392,10 @@ export const products: Product[] = [
     category: "sandalias",
     price: 69.9,
     compareAtPrice: 100,
-    description: "Sandália marrom flatform com fivela dourada. Moderna.",
+    description: "Sandália marrom flatform com fivela e detalhe metálico. Dois ângulos do mesmo par.",
     sizes: SIZE,
     colors: ["Marrom"],
-    image: "/imagens/espaco35-29.jpg",
-  },
-  {
-    slug: "sandalia-marrom-pedraria",
-    name: "Sandália Marrom Pedraria",
-    brand: "Mississipi",
-    category: "sandalias",
-    price: 69.9,
-    compareAtPrice: 100,
-    description: "Sandália marrom com pedraria. Brilho no ponto certo.",
-    sizes: SIZE,
-    colors: ["Marrom"],
-    image: "/imagens/espaco35-30.jpg",
+    images: ["/imagens/espaco35-29.jpg", "/imagens/espaco35-30.jpg"],
   },
   {
     slug: "sandalia-off-white-argola-dourada",
@@ -438,7 +407,7 @@ export const products: Product[] = [
     description: "Sandália off-white com argola dourada. Delicada.",
     sizes: SIZE,
     colors: ["Off-White"],
-    image: "/imagens/espaco35-31.jpg",
+    images: ["/imagens/espaco35-31.jpg"],
   },
   {
     slug: "anabela-dourada-tachas",
@@ -450,7 +419,7 @@ export const products: Product[] = [
     description: "Anabela dourada com tachas. Glamour e conforto.",
     sizes: SIZE,
     colors: ["Dourado"],
-    image: "/imagens/espaco35-32.jpg",
+    images: ["/imagens/espaco35-32.jpg"],
     featured: true,
     lastUnits: true,
   },
@@ -464,7 +433,7 @@ export const products: Product[] = [
     description: "Sandália nude de salto bloco. Discreta e elegante.",
     sizes: SIZE,
     colors: ["Nude"],
-    image: "/imagens/espaco35-33.jpg",
+    images: ["/imagens/espaco35-33.jpg"],
   },
   {
     slug: "sandalia-dourada-tiras-finas",
@@ -476,7 +445,7 @@ export const products: Product[] = [
     description: "Sandália dourada de tiras finas. Iluminada.",
     sizes: SIZE,
     colors: ["Dourado"],
-    image: "/imagens/espaco35-34.jpg",
+    images: ["/imagens/espaco35-34.jpg"],
   },
   {
     slug: "sandalia-rose-salto-bloco",
@@ -488,7 +457,7 @@ export const products: Product[] = [
     description: "Sandália rosê de salto bloco. Romântica e moderna.",
     sizes: SIZE,
     colors: ["Rosê"],
-    image: "/imagens/espaco35-35.jpg",
+    images: ["/imagens/espaco35-35.jpg"],
   },
   {
     slug: "papete-branca-pedraria",
@@ -500,7 +469,7 @@ export const products: Product[] = [
     description: "Papete branca com pedraria. Conforto com brilho.",
     sizes: SIZE,
     colors: ["Branco"],
-    image: "/imagens/espaco35-36.jpg",
+    images: ["/imagens/espaco35-36.jpg"],
   },
   {
     slug: "tenis-branco-detalhe-lilas",
@@ -512,7 +481,7 @@ export const products: Product[] = [
     description: "Tênis branco com detalhes lilás. Jovem e confortável.",
     sizes: SIZE,
     colors: ["Branco"],
-    image: "/imagens/espaco35-37.jpg",
+    images: ["/imagens/espaco35-37.jpg"],
   },
   {
     slug: "tenis-off-white-recorte",
@@ -524,7 +493,7 @@ export const products: Product[] = [
     description: "Tênis off-white com recortes. Casual e leve.",
     sizes: SIZE,
     colors: ["Off-White"],
-    image: "/imagens/espaco35-38.jpg",
+    images: ["/imagens/espaco35-38.jpg"],
   },
   {
     slug: "sandalia-dourada-salto-baixo",
@@ -536,7 +505,7 @@ export const products: Product[] = [
     description: "Sandália dourada de salto baixo. Charme diário.",
     sizes: SIZE,
     colors: ["Dourado"],
-    image: "/imagens/espaco35-39.jpg",
+    images: ["/imagens/espaco35-39.jpg"],
   },
   {
     slug: "sandalia-rose-pedra",
@@ -548,31 +517,19 @@ export const products: Product[] = [
     description: "Sandália rosê com pedra. Delicada e brilhante.",
     sizes: SIZE,
     colors: ["Rosê"],
-    image: "/imagens/espaco35-40.jpg",
+    images: ["/imagens/espaco35-40.jpg"],
   },
   {
     slug: "rasteira-marrom-tiras-finas",
-    name: "Rasteira Marrom Tiras Finas",
+    name: "Sandália Marrom Tiras Strass",
     brand: "Mississipi",
     category: "sandalias",
     price: 69.9,
     compareAtPrice: 100,
-    description: "Rasteira marrom de tiras finas. Despojada.",
+    description: "Sandália marrom de tiras finas com strass. Dois ângulos do mesmo par.",
     sizes: SIZE,
     colors: ["Marrom"],
-    image: "/imagens/espaco35-41.jpg",
-  },
-  {
-    slug: "sandalia-caramelo-tiras",
-    name: "Sandália Caramelo Tiras",
-    brand: "Mississipi",
-    category: "sandalias",
-    price: 69.9,
-    compareAtPrice: 100,
-    description: "Sandália caramelo de tiras. Versátil e leve.",
-    sizes: SIZE,
-    colors: ["Caramelo"],
-    image: "/imagens/espaco35-42.jpg",
+    images: ["/imagens/espaco35-41.jpg", "/imagens/espaco35-42.jpg"],
   },
   {
     slug: "anabela-caramelo-fivela",
@@ -584,7 +541,7 @@ export const products: Product[] = [
     description: "Anabela caramelo com fivela. Conforto com altura.",
     sizes: SIZE,
     colors: ["Caramelo"],
-    image: "/imagens/espaco35-43.jpg",
+    images: ["/imagens/espaco35-43.jpg", "/imagens/espaco35-66.jpg"],
     featured: true,
     lastUnits: true,
   },
@@ -598,7 +555,7 @@ export const products: Product[] = [
     description: "Rasteira nude com pedraria. Sofisticação no plano.",
     sizes: SIZE,
     colors: ["Nude"],
-    image: "/imagens/espaco35-44.jpg",
+    images: ["/imagens/espaco35-44.jpg", "/imagens/espaco35-73.jpg"],
   },
   {
     slug: "tamanco-verde-slide",
@@ -610,7 +567,7 @@ export const products: Product[] = [
     description: "Tamanco verde slide. Tendência da estação.",
     sizes: SIZE,
     colors: ["Verde"],
-    image: "/imagens/espaco35-45.jpg",
+    images: ["/imagens/espaco35-45.jpg"],
     featured: true,
     lastUnits: true,
   },
@@ -624,7 +581,7 @@ export const products: Product[] = [
     description: "Rasteira caramelo de tiras. Básica indispensável.",
     sizes: SIZE,
     colors: ["Caramelo"],
-    image: "/imagens/espaco35-46.jpg",
+    images: ["/imagens/espaco35-46.jpg"],
   },
   {
     slug: "sandalia-caramelo-salto-taca",
@@ -636,7 +593,7 @@ export const products: Product[] = [
     description: "Sandália caramelo de salto taça. Moderna e feminina.",
     sizes: SIZE,
     colors: ["Caramelo"],
-    image: "/imagens/espaco35-47.jpg",
+    images: ["/imagens/espaco35-47.jpg", "/imagens/espaco35-67.jpg"],
     featured: true,
     lastUnits: true,
   },
@@ -650,7 +607,7 @@ export const products: Product[] = [
     description: "Sandália caramelo de tiras trançadas. Charmosa.",
     sizes: SIZE,
     colors: ["Caramelo"],
-    image: "/imagens/espaco35-48.jpg",
+    images: ["/imagens/espaco35-48.jpg"],
   },
   {
     slug: "mule-dourado-trancado",
@@ -662,7 +619,7 @@ export const products: Product[] = [
     description: "Mule dourado trançado. Brilho e conforto.",
     sizes: SIZE,
     colors: ["Dourado"],
-    image: "/imagens/espaco35-49.jpg",
+    images: ["/imagens/espaco35-49.jpg"],
   },
   {
     slug: "papete-bege-flatform",
@@ -674,7 +631,7 @@ export const products: Product[] = [
     description: "Papete bege flatform. Conforto que combina com tudo.",
     sizes: SIZE,
     colors: ["Bege"],
-    image: "/imagens/espaco35-50.jpg",
+    images: ["/imagens/espaco35-50.jpg"],
   },
   {
     slug: "sandalia-caramelo-salto-bloco",
@@ -686,7 +643,7 @@ export const products: Product[] = [
     description: "Sandália caramelo de salto bloco. Clássica.",
     sizes: SIZE,
     colors: ["Caramelo"],
-    image: "/imagens/espaco35-51.jpg",
+    images: ["/imagens/espaco35-51.jpg", "/imagens/espaco35-68.jpg"],
   },
   {
     slug: "sandalia-caramelo-fivela",
@@ -698,7 +655,7 @@ export const products: Product[] = [
     description: "Sandália caramelo flatform com fivela. Estilosa.",
     sizes: SIZE,
     colors: ["Caramelo"],
-    image: "/imagens/espaco35-52.jpg",
+    images: ["/imagens/espaco35-52.jpg"],
   },
   {
     slug: "papete-caramelo-velcro",
@@ -710,7 +667,7 @@ export const products: Product[] = [
     description: "Papete caramelo com velcro. Conforto regulável.",
     sizes: SIZE,
     colors: ["Caramelo"],
-    image: "/imagens/espaco35-53.jpg",
+    images: ["/imagens/espaco35-53.jpg"],
   },
   {
     slug: "sandalia-caramelo-salto-baixo",
@@ -722,7 +679,7 @@ export const products: Product[] = [
     description: "Sandália caramelo de salto baixo. Para o dia a dia.",
     sizes: SIZE,
     colors: ["Caramelo"],
-    image: "/imagens/espaco35-54.jpg",
+    images: ["/imagens/espaco35-54.jpg"],
   },
   {
     slug: "mule-off-white-conforto",
@@ -734,7 +691,7 @@ export const products: Product[] = [
     description: "Mule off-white de solado conforto. Clean e prática.",
     sizes: SIZE,
     colors: ["Off-White"],
-    image: "/imagens/espaco35-55.jpg",
+    images: ["/imagens/espaco35-55.jpg", "/imagens/espaco35-74.jpg"],
   },
   {
     slug: "papete-off-white-dupla",
@@ -746,7 +703,7 @@ export const products: Product[] = [
     description: "Papete off-white de tira dupla. Minimalista.",
     sizes: SIZE,
     colors: ["Off-White"],
-    image: "/imagens/espaco35-56.jpg",
+    images: ["/imagens/espaco35-56.jpg"],
   },
   {
     slug: "rasteira-dourada-tachas",
@@ -758,7 +715,7 @@ export const products: Product[] = [
     description: "Rasteira dourada com tachas. Brilho no passo.",
     sizes: SIZE,
     colors: ["Dourado"],
-    image: "/imagens/espaco35-57.jpg",
+    images: ["/imagens/espaco35-57.jpg"],
   },
   {
     slug: "tenis-branco-recorte-caramelo",
@@ -770,7 +727,7 @@ export const products: Product[] = [
     description: "Tênis branco com recorte caramelo. Casual chique.",
     sizes: SIZE,
     colors: ["Branco"],
-    image: "/imagens/espaco35-58.jpg",
+    images: ["/imagens/espaco35-58.jpg"],
   },
   {
     slug: "sandalia-rose-strass",
@@ -782,7 +739,7 @@ export const products: Product[] = [
     description: "Sandália rosê com strass. Glamour e leveza.",
     sizes: SIZE,
     colors: ["Rosê"],
-    image: "/imagens/espaco35-59.jpg",
+    images: ["/imagens/espaco35-59.jpg"],
     featured: true,
     lastUnits: true,
   },
@@ -796,7 +753,7 @@ export const products: Product[] = [
     description: "Papete caramelo de tiras finas. Delicada.",
     sizes: SIZE,
     colors: ["Caramelo"],
-    image: "/imagens/espaco35-60.jpg",
+    images: ["/imagens/espaco35-60.jpg"],
   },
   {
     slug: "sandalia-dourada-salto-tiras",
@@ -808,7 +765,7 @@ export const products: Product[] = [
     description: "Sandália dourada de salto com tiras. Festa e brilho.",
     sizes: SIZE,
     colors: ["Dourado"],
-    image: "/imagens/espaco35-61.jpg",
+    images: ["/imagens/espaco35-61.jpg"],
   },
   {
     slug: "tenis-off-white-cadarco",
@@ -820,7 +777,7 @@ export const products: Product[] = [
     description: "Tênis off-white com cadarço. Conforto diário.",
     sizes: SIZE,
     colors: ["Off-White"],
-    image: "/imagens/espaco35-62.jpg",
+    images: ["/imagens/espaco35-62.jpg", "/imagens/espaco35-69.jpg"],
   },
   {
     slug: "tenis-rose-casual",
@@ -832,7 +789,7 @@ export const products: Product[] = [
     description: "Tênis rosê casual. Fofo e confortável.",
     sizes: SIZE,
     colors: ["Rosê"],
-    image: "/imagens/espaco35-63.jpg",
+    images: ["/imagens/espaco35-63.jpg", "/imagens/espaco35-70.jpg"],
     featured: true,
     lastUnits: true,
   },
@@ -846,7 +803,7 @@ export const products: Product[] = [
     description: "Tênis bege matelassê de plataforma. Tendência.",
     sizes: SIZE,
     colors: ["Bege"],
-    image: "/imagens/espaco35-64.jpg",
+    images: ["/imagens/espaco35-64.jpg", "/imagens/espaco35-71.jpg"],
     featured: true,
     lastUnits: true,
   },
@@ -860,7 +817,7 @@ export const products: Product[] = [
     description: "Tênis off-white de plataforma. Estiloso e leve.",
     sizes: SIZE,
     colors: ["Off-White"],
-    image: "/imagens/espaco35-65.jpg",
+    images: ["/imagens/espaco35-65.jpg", "/imagens/espaco35-72.jpg"],
   },
 ];
 
