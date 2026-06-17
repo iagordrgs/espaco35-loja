@@ -1,8 +1,8 @@
-import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import AddToCart from "@/components/AddToCart";
 import ProductCard from "@/components/ProductCard";
+import ProductGallery from "@/components/ProductGallery";
 import {
   formatPrice,
   getProduct,
@@ -42,16 +42,7 @@ export default async function ProductPage({
       </nav>
 
       <div className="grid gap-10 lg:grid-cols-2">
-        <div className="relative aspect-square overflow-hidden rounded-2xl border border-white/10 bg-white">
-          <Image
-            src={product.image}
-            alt={product.name}
-            fill
-            sizes="(max-width: 1024px) 100vw, 50vw"
-            className="object-cover"
-            priority
-          />
-        </div>
+        <ProductGallery images={product.images} alt={product.name} />
 
         <div>
           <span className="text-xs uppercase tracking-[0.15em] text-brand">
