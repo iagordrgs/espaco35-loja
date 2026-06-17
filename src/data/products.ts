@@ -11,8 +11,20 @@ export type Product = {
   sizes: number[];
   colors: string[];
   image: string;
-  featured?: boolean;
+  featured?: boolean; // aparece na seção "Destaques" da home
+  lastUnits?: boolean; // mostra o selo "Últimas unidades" no card
 };
+
+/*
+ * ─────────────────────────────────────────────────────────────
+ *  COMO ESCOLHER OS DESTAQUES DA HOME
+ *  Em qualquer par abaixo, adicione  featured: true,  para ele
+ *  aparecer na seção "Destaques". Remova para tirar.
+ *  Para o selo dourado de escassez, adicione  lastUnits: true,
+ *  Lista numerada dos pares: ver o número no nome do arquivo da
+ *  imagem (espaco35-01 = par 1, etc.).
+ * ─────────────────────────────────────────────────────────────
+ */
 
 export const categories: { key: Category; label: string }[] = [
   { key: "tenis", label: "Tênis" },
@@ -38,6 +50,7 @@ export const products: Product[] = [
     colors: ["Prata"],
     image: "/imagens/espaco35-01.jpg",
     featured: true,
+    lastUnits: true,
   },
   {
     slug: "rasteira-tiras-mostarda",
@@ -115,6 +128,7 @@ export const products: Product[] = [
     colors: ["Off-White"],
     image: "/imagens/espaco35-07.jpg",
     featured: true,
+    lastUnits: true,
   },
   {
     slug: "flatform-caramelo-tachas",
@@ -231,6 +245,7 @@ export const products: Product[] = [
     colors: ["Nude"],
     image: "/imagens/espaco35-16.jpg",
     featured: true,
+    lastUnits: true,
   },
   {
     slug: "tenis-rose-detalhe-dourado",
@@ -245,6 +260,7 @@ export const products: Product[] = [
     colors: ["Rosê"],
     image: "/imagens/espaco35-17.jpg",
     featured: true,
+    lastUnits: true,
   },
   {
     slug: "tenis-branco-off-white",
@@ -285,6 +301,7 @@ export const products: Product[] = [
     colors: ["Dourado"],
     image: "/imagens/espaco35-20.jpg",
     featured: true,
+    lastUnits: true,
   },
   {
     slug: "tenis-branco-matelasse",
