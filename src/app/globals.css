@@ -1,41 +1,49 @@
 @import "tailwindcss";
 
 /* ===========================================================
-   ESPAÇO 35 — identidade
-   preto #0B0B0B · off-white #F5F2ED · champagne gold #D6B07A
+   ESPAÇO 35 — BOUTIQUE (tema premium minimalista)
+   off-white #F8F6F3 · nude #EFE8DF · card #FFFCF8
+   texto #2F2925 · secundário #766E66 · dourado fosco #B88A44
    =========================================================== */
 
 :root {
-  color-scheme: dark;
-  --background: #0b0b0b;
-  --foreground: #f5f2ed;
-  --brand: #d6b07a;
-  --brand-dark: #e6cea8; /* hover dos botões dourados (ouro claro) */
-  --accent: #e6cea8;
-  --muted: #9a958c;
-  --card: #161616;
+  color-scheme: light;
+  --background: #f8f6f3;
+  --foreground: #2f2925;
+  --card: #fffcf8;
+  --nude: #efe8df;
+  --muted: #766e66;
+  --brand: #b88a44;        /* dourado fosco */
+  --brand-dark: #9c7438;   /* hover dourado */
+  --accent: #9c7438;
+  --line: rgba(47, 41, 37, 0.12);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-nude: var(--nude);
+  --color-muted: var(--muted);
   --color-brand: var(--brand);
   --color-brand-dark: var(--brand-dark);
   --color-accent: var(--accent);
-  --color-muted: var(--muted);
-  --color-card: var(--card);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-inter);
+  --font-serif: var(--font-playfair);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-sans), "Helvetica Neue", Arial, sans-serif;
+  font-family: var(--font-inter), "Helvetica Neue", Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 
-::selection {
-  background: var(--brand);
-  color: var(--background);
+h1, h2, h3, .font-serif {
+  font-family: var(--font-playfair), Georgia, serif;
+  font-weight: 500;
+  letter-spacing: 0.01em;
 }
+
+::selection { background: var(--brand); color: #fff; }
+html { scroll-behavior: smooth; }

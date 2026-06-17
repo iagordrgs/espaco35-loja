@@ -1,25 +1,27 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Playfair_Display, Inter } from "next/font/google";
 import "./globals.css";
 import { CartProvider } from "@/context/CartContext";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import WhatsAppFloat from "@/components/WhatsAppFloat";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const playfair = Playfair_Display({
+  variable: "--font-playfair",
   subsets: ["latin"],
+  weight: ["500", "600"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
+  weight: ["400", "500", "600"],
 });
 
 export const metadata: Metadata = {
-  title: "Espaço 35 | Calçados Femininos · Fortaleza",
+  title: "Espaço 35 | Boutique de Calçados Femininos · Fortaleza",
   description:
-    "Calçados femininos exclusivamente tamanho 35 — pares novos, originais e com caixa. Mississipi, Pink Cats e Campesí. Fortaleza-CE.",
+    "Boutique digital de calçados femininos, exclusivamente tamanho 35. Curadoria de modelos novos, originais e com caixa.",
 };
 
 export default function RootLayout({
@@ -30,7 +32,7 @@ export default function RootLayout({
   return (
     <html
       lang="pt-BR"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${playfair.variable} ${inter.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
         <CartProvider>
