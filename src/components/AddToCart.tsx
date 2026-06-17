@@ -21,8 +21,8 @@ export default function AddToCart({ product }: { product: Product }) {
     addItem({
       slug: product.slug,
       name: product.name,
-      price: product.price ?? 0, // sob consulta entra como 0 no carrinho
-      image: product.image,
+      price: product.price ?? 0,
+      image: product.images[0],
       size,
       color,
       quantity,
@@ -34,7 +34,6 @@ export default function AddToCart({ product }: { product: Product }) {
 
   return (
     <div className="mt-8 space-y-6">
-      {/* Cor */}
       <div>
         <label className="text-sm font-semibold">Cor</label>
         <div className="mt-2 flex flex-wrap gap-2">
@@ -55,7 +54,6 @@ export default function AddToCart({ product }: { product: Product }) {
         </div>
       </div>
 
-      {/* Tamanho */}
       <div>
         <label className="text-sm font-semibold">
           Tamanho{" "}
@@ -86,7 +84,6 @@ export default function AddToCart({ product }: { product: Product }) {
         </div>
       </div>
 
-      {/* Quantidade */}
       <div>
         <label className="text-sm font-semibold">Quantidade</label>
         <div className="mt-2 inline-flex items-center rounded-lg border border-white/15">
