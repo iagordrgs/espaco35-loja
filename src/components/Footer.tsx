@@ -13,8 +13,8 @@ export default function Footer() {
               ESPAÇO 35
             </span>
             <p className="mt-4 text-[13.5px] leading-7 text-[#C9C0B5]">
-              Boutique digital de calçados femininos, exclusivamente tamanho
-              35. Pares novos, originais e com caixa.
+              Loja de calçados femininos, só tamanho 35. Modelos novos e
+              originais, com caixa — Mississipi, Pink Cats e Campesí.
             </p>
           </div>
 
