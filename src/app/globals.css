@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /* ===========================================================
-   ESPAÇO 35 — BOUTIQUE (tema premium minimalista)
+   ESPAÇO 35 — fonte única Manrope (estilo Larsseit / Mississipi)
    off-white #F8F6F3 · nude #EFE8DF · card #FFFCF8
    texto #2F2925 · secundário #766E66 · dourado fosco #B88A44
    =========================================================== */
@@ -13,8 +13,8 @@
   --card: #fffcf8;
   --nude: #efe8df;
   --muted: #766e66;
-  --brand: #b88a44;        /* dourado fosco */
-  --brand-dark: #9c7438;   /* hover dourado */
+  --brand: #b88a44;
+  --brand-dark: #9c7438;
   --accent: #9c7438;
   --line: rgba(47, 41, 37, 0.12);
 }
@@ -28,21 +28,22 @@
   --color-brand: var(--brand);
   --color-brand-dark: var(--brand-dark);
   --color-accent: var(--accent);
-  --font-sans: var(--font-inter);
-  --font-serif: var(--font-playfair);
+  --font-sans: var(--font-manrope);
+  --font-serif: var(--font-manrope);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-inter), "Helvetica Neue", Arial, sans-serif;
+  font-family: var(--font-manrope), "Helvetica Neue", Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 
+/* títulos: mesma família, peso forte e tracking apertado (vibe Larsseit) */
 h1, h2, h3, .font-serif {
-  font-family: var(--font-playfair), Georgia, serif;
-  font-weight: 500;
-  letter-spacing: 0.01em;
+  font-family: var(--font-manrope), "Helvetica Neue", Arial, sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.02em;
 }
 
 ::selection { background: var(--brand); color: #fff; }
