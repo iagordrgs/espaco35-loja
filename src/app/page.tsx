@@ -37,23 +37,23 @@ export default function Home() {
   return (
     <div>
       {/* HERO */}
-      <section className="px-6 pt-16 pb-20">
+      <section className="px-6 pt-20 pb-24">
         <div className="mx-auto grid max-w-6xl items-center gap-14 md:grid-cols-2">
           <div>
-            <span className="text-xs font-semibold uppercase tracking-[0.28em] text-brand">
+            <span className="text-sm font-bold uppercase tracking-[0.28em] text-brand">
               Calçados femininos · Fortaleza
             </span>
-            <h1 className="mt-6 font-serif text-4xl leading-tight sm:text-5xl">
+            <h1 className="mt-7 font-serif text-5xl leading-[1.02] sm:text-6xl lg:text-7xl">
               Calçados femininos. Exclusivamente no tamanho 35.
             </h1>
-            <p className="mt-6 max-w-md text-[16.5px] text-muted">
+            <p className="mt-8 max-w-lg text-xl leading-relaxed text-muted">
               Modelos novos e originais das marcas Mississipi, Pink Cats e
               Campesí. Poucas unidades de cada par — viu, gostou, é seu.
             </p>
-            <div className="mt-9 flex flex-wrap gap-3">
+            <div className="mt-10 flex flex-wrap gap-4">
               <Link
                 href="/produtos"
-                className="rounded-2xl bg-foreground px-8 py-4 text-sm font-semibold tracking-wide text-background transition hover:bg-brand"
+                className="rounded-2xl bg-foreground px-10 py-5 text-base font-bold tracking-wide text-background transition hover:bg-brand"
               >
                 Ver coleção
               </Link>
@@ -61,7 +61,7 @@ export default function Home() {
                 href={WA}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="rounded-2xl border border-[var(--line)] px-8 py-4 text-sm font-semibold tracking-wide text-foreground transition hover:bg-nude"
+                className="rounded-2xl border-2 border-[var(--line)] px-10 py-5 text-base font-bold tracking-wide text-foreground transition hover:bg-nude"
               >
                 Falar no WhatsApp
               </a>
