@@ -39,7 +39,7 @@ export default function ProductGallery({
           alt={alt}
           fill
           sizes="(max-width: 1024px) 100vw, 50vw"
-          className="cursor-zoom-in object-cover"
+          className="cursor-zoom-in object-contain p-3"
           priority
           onClick={() => setZoom(true)}
         />
@@ -80,7 +80,7 @@ export default function ProductGallery({
                 idx === i ? "border-brand" : "border-[var(--line)] hover:border-brand/50"
               }`}
             >
-              <Image src={src} alt={`${alt} ${idx + 1}`} fill sizes="80px" className="object-cover" />
+              <Image src={src} alt={`${alt} ${idx + 1}`} fill sizes="80px" className="object-contain p-1" />
             </button>
           ))}
         </div>

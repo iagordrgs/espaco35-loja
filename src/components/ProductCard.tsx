@@ -38,7 +38,7 @@ export default function ProductCard({ product }: { product: Product }) {
           alt={product.name}
           fill
           sizes="(max-width: 768px) 50vw, 25vw"
-          className="object-cover transition duration-700 group-hover:scale-105"
+          className="object-contain p-3 transition duration-700 group-hover:scale-105"
         />
         {product.lastUnits ? (
           <span className="absolute left-3 top-3 rounded-full border border-[var(--line)] bg-card px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-brand">
