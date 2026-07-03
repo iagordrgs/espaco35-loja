@@ -121,7 +121,7 @@ export default function CarrinhoPage() {
             href="/checkout"
             className="mt-6 block rounded-full bg-brand px-6 py-3 text-center font-semibold text-background transition hover:bg-accent"
           >
-            Finalizar compra
+            Fechar pedido no WhatsApp
           </Link>
           <Link
             href="/produtos"
