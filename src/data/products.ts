@@ -2,6 +2,7 @@ export type Category = "tenis" | "sapatos" | "botas" | "sandalias";
 
 export type Product = {
   slug: string;
+  code: string; // código interno E35-XXX (ordem do catálogo)
   name: string;
   brand: string;
   category: Category;
@@ -39,6 +40,7 @@ const SIZE = [35];
 export const products: Product[] = [
   {
     slug: "slingback-prata-biqueira-dourada",
+    code: "E35-001",
     name: "Slingback Prata Biqueira Dourada",
     brand: "Mississipi",
     category: "sapatos",
@@ -53,6 +55,7 @@ export const products: Product[] = [
   },
   {
     slug: "rasteira-tiras-mostarda",
+    code: "E35-002",
     name: "Rasteira Tiras Mostarda",
     brand: "Mississipi",
     category: "sandalias",
@@ -65,6 +68,7 @@ export const products: Product[] = [
   },
   {
     slug: "rasteira-gladiadora-caramelo",
+    code: "E35-003",
     name: "Rasteira Gladiadora Caramelo",
     brand: "Mississipi",
     category: "sandalias",
@@ -77,6 +81,7 @@ export const products: Product[] = [
   },
   {
     slug: "tenis-casual-caramelo",
+    code: "E35-004",
     name: "Tênis Casual Caramelo",
     brand: "Mississipi",
     category: "tenis",
@@ -89,6 +94,7 @@ export const products: Product[] = [
   },
   {
     slug: "sandalia-salto-baixo-caramelo",
+    code: "E35-005",
     name: "Sandália Salto Baixo Caramelo",
     brand: "Mississipi",
     category: "sandalias",
@@ -101,6 +107,7 @@ export const products: Product[] = [
   },
   {
     slug: "rasteira-dourada-trancada",
+    code: "E35-006",
     name: "Rasteira Dourada Trançada",
     brand: "Campesí",
     category: "sandalias",
@@ -113,6 +120,7 @@ export const products: Product[] = [
   },
   {
     slug: "mule-off-white",
+    code: "E35-007",
     name: "Mule Off-White",
     brand: "Mississipi",
     category: "sapatos",
@@ -127,6 +135,7 @@ export const products: Product[] = [
   },
   {
     slug: "flatform-caramelo-tachas",
+    code: "E35-008",
     name: "Flatform Caramelo Tachas",
     brand: "Mississipi",
     category: "sandalias",
@@ -139,6 +148,7 @@ export const products: Product[] = [
   },
   {
     slug: "sandalia-salto-taca-caramelo",
+    code: "E35-009",
     name: "Sandália Salto Taça Caramelo",
     brand: "Mississipi",
     category: "sandalias",
@@ -151,6 +161,7 @@ export const products: Product[] = [
   },
   {
     slug: "sandalia-salto-bloco-caramelo",
+    code: "E35-010",
     name: "Sandália Salto Bloco Caramelo",
     brand: "Mississipi",
     category: "sandalias",
@@ -163,6 +174,7 @@ export const products: Product[] = [
   },
   {
     slug: "sandalia-salto-bloco-branca",
+    code: "E35-011",
     name: "Sandália Salto Bloco Branca",
     brand: "Mississipi",
     category: "sandalias",
@@ -175,6 +187,7 @@ export const products: Product[] = [
   },
   {
     slug: "mocassim-tratorado-caramelo",
+    code: "E35-012",
     name: "Mocassim Tratorado Caramelo",
     brand: "Mississipi",
     category: "sapatos",
@@ -187,6 +200,7 @@ export const products: Product[] = [
   },
   {
     slug: "tamanco-verde-fivela",
+    code: "E35-013",
     name: "Tamanco Verde Fivela",
     brand: "Mississipi",
     category: "sandalias",
@@ -199,6 +213,7 @@ export const products: Product[] = [
   },
   {
     slug: "sandalia-salto-fino-dourada",
+    code: "E35-014",
     name: "Sandália Salto Fino Dourada",
     brand: "Mississipi",
     category: "sandalias",
@@ -211,6 +226,7 @@ export const products: Product[] = [
   },
   {
     slug: "sandalia-salto-taca-strass",
+    code: "E35-015",
     name: "Sandália Salto Taça Strass",
     brand: "Mississipi",
     category: "sandalias",
@@ -223,6 +239,7 @@ export const products: Product[] = [
   },
   {
     slug: "sandalia-salto-bloco-nude-medalhao",
+    code: "E35-016",
     name: "Sandália Salto Bloco Nude Medalhão",
     brand: "Mississipi",
     category: "sandalias",
@@ -237,6 +254,7 @@ export const products: Product[] = [
   },
   {
     slug: "tenis-rose-detalhe-dourado",
+    code: "E35-017",
     name: "Tênis Rosê Detalhe Dourado",
     brand: "Mississipi",
     category: "tenis",
@@ -251,6 +269,7 @@ export const products: Product[] = [
   },
   {
     slug: "tenis-branco-off-white",
+    code: "E35-018",
     name: "Tênis Branco Off-White",
     brand: "Mississipi",
     category: "tenis",
@@ -263,6 +282,7 @@ export const products: Product[] = [
   },
   {
     slug: "papete-anabela-bege-argola-dourada",
+    code: "E35-019",
     name: "Papete Anabela Bege Argola Dourada",
     brand: "Mississipi",
     category: "sandalias",
@@ -275,6 +295,7 @@ export const products: Product[] = [
   },
   {
     slug: "papete-dourada-tiras-argola",
+    code: "E35-020",
     name: "Papete Dourada Tiras com Argola",
     brand: "Mississipi",
     category: "sandalias",
@@ -289,6 +310,7 @@ export const products: Product[] = [
   },
   {
     slug: "tenis-branco-matelasse",
+    code: "E35-021",
     name: "Tênis Branco Matelassê",
     brand: "Mississipi",
     category: "tenis",
@@ -301,6 +323,7 @@ export const products: Product[] = [
   },
   {
     slug: "rasteira-cafe-discos-dourados",
+    code: "E35-022",
     name: "Rasteira Café Discos Dourados",
     brand: "Mississipi",
     category: "sandalias",
@@ -313,6 +336,7 @@ export const products: Product[] = [
   },
   {
     slug: "sandalia-baixa-tranca-dourada-strass",
+    code: "E35-023",
     name: "Sandália Baixa Trança Dourada Strass",
     brand: "Mississipi",
     category: "sandalias",
@@ -325,6 +349,7 @@ export const products: Product[] = [
   },
   {
     slug: "mocassim-marrom-fivela",
+    code: "E35-024",
     name: "Mocassim Marrom Fivela",
     brand: "Mississipi",
     category: "sapatos",
@@ -337,6 +362,7 @@ export const products: Product[] = [
   },
   {
     slug: "scarpin-off-white-salto-bloco",
+    code: "E35-025",
     name: "Scarpin Off-White Salto Bloco",
     brand: "Mississipi",
     category: "sapatos",
@@ -349,6 +375,7 @@ export const products: Product[] = [
   },
   {
     slug: "sapatilha-preta-tira",
+    code: "E35-026",
     name: "Sapatilha Preta Tira",
     brand: "Mississipi",
     category: "sapatos",
@@ -361,6 +388,7 @@ export const products: Product[] = [
   },
   {
     slug: "scarpin-caramelo-fivela-dourada",
+    code: "E35-027",
     name: "Scarpin Caramelo Fivela Dourada",
     brand: "Mississipi",
     category: "sapatos",
@@ -375,6 +403,7 @@ export const products: Product[] = [
   },
   {
     slug: "rasteira-off-white-tiras-cruzadas",
+    code: "E35-028",
     name: "Rasteira Off-White Tiras Cruzadas",
     brand: "Mississipi",
     category: "sandalias",
@@ -387,6 +416,7 @@ export const products: Product[] = [
   },
   {
     slug: "sandalia-marrom-flatform-fivela",
+    code: "E35-029",
     name: "Sandália Marrom Flatform Fivela",
     brand: "Mississipi",
     category: "sandalias",
@@ -399,6 +429,7 @@ export const products: Product[] = [
   },
   {
     slug: "sandalia-off-white-argola-dourada",
+    code: "E35-030",
     name: "Sandália Off-White Argola Dourada",
     brand: "Mississipi",
     category: "sandalias",
@@ -411,6 +442,7 @@ export const products: Product[] = [
   },
   {
     slug: "anabela-dourada-tachas",
+    code: "E35-031",
     name: "Anabela Dourada Tachas",
     brand: "Mississipi",
     category: "sandalias",
@@ -425,6 +457,7 @@ export const products: Product[] = [
   },
   {
     slug: "sandalia-nude-salto-bloco",
+    code: "E35-032",
     name: "Sandália Nude Salto Bloco",
     brand: "Mississipi",
     category: "sandalias",
@@ -437,30 +470,35 @@ export const products: Product[] = [
   },
   {
     slug: "sandalia-dourada-tiras-finas",
+    code: "E35-033",
     name: "Sandália Dourada Tiras Finas",
-    brand: "Mississipi",
+    brand: "Pink Cats",
     category: "sandalias",
     price: 69.9,
     compareAtPrice: 100,
-    description: "Sandália dourada de tiras finas. Iluminada.",
+    description:
+      "Sandália dourada de tiras finas com nó de strass. Iluminada. Dois ângulos do mesmo par.",
     sizes: SIZE,
     colors: ["Dourado"],
-    images: ["/imagens/espaco35-34.jpg"],
+    images: ["/imagens/espaco35-34.jpg", "/imagens/espaco35-67.jpg"],
   },
   {
     slug: "sandalia-rose-salto-bloco",
+    code: "E35-034",
     name: "Sandália Rosê Salto Bloco",
-    brand: "Campesí",
+    brand: "Pink Cats",
     category: "sandalias",
     price: 69.9,
     compareAtPrice: 100,
-    description: "Sandália rosê de salto bloco. Romântica e moderna.",
+    description:
+      "Sandália rosê de salto bloco. Romântica e moderna. Dois ângulos do mesmo par.",
     sizes: SIZE,
     colors: ["Rosê"],
-    images: ["/imagens/espaco35-35.jpg"],
+    images: ["/imagens/espaco35-35.jpg", "/imagens/espaco35-73.jpg"],
   },
   {
     slug: "papete-branca-pedraria",
+    code: "E35-035",
     name: "Papete Branca Pedraria",
     brand: "Mississipi",
     category: "sandalias",
@@ -473,6 +511,7 @@ export const products: Product[] = [
   },
   {
     slug: "tenis-branco-detalhe-lilas",
+    code: "E35-036",
     name: "Tênis Branco Detalhe Lilás",
     brand: "Pink Cats",
     category: "tenis",
@@ -484,19 +523,21 @@ export const products: Product[] = [
     images: ["/imagens/espaco35-37.jpg"],
   },
   {
-    slug: "tenis-off-white-recorte",
-    name: "Tênis Off-White Recorte",
-    brand: "Mississipi",
+    slug: "tenis-branco-detalhe-rosa",
+    code: "E35-037",
+    name: "Tênis Branco Detalhe Rosa",
+    brand: "Pink Cats",
     category: "tenis",
     price: 69.9,
     compareAtPrice: 100,
-    description: "Tênis off-white com recortes. Casual e leve.",
+    description: "Tênis branco com detalhes rosa e bege. Casual e leve.",
     sizes: SIZE,
-    colors: ["Off-White"],
+    colors: ["Branco", "Rosa"],
     images: ["/imagens/espaco35-38.jpg"],
   },
   {
     slug: "sandalia-dourada-salto-baixo",
+    code: "E35-038",
     name: "Sandália Dourada Salto Baixo",
     brand: "Mississipi",
     category: "sandalias",
@@ -509,6 +550,7 @@ export const products: Product[] = [
   },
   {
     slug: "sandalia-rose-pedra",
+    code: "E35-039",
     name: "Sandália Rosê Pedra",
     brand: "Mississipi",
     category: "sandalias",
@@ -521,6 +563,7 @@ export const products: Product[] = [
   },
   {
     slug: "rasteira-marrom-tiras-finas",
+    code: "E35-040",
     name: "Sandália Marrom Tiras Strass",
     brand: "Mississipi",
     category: "sandalias",
@@ -533,6 +576,7 @@ export const products: Product[] = [
   },
   {
     slug: "anabela-caramelo-fivela",
+    code: "E35-041",
     name: "Anabela Caramelo Fivela",
     brand: "Mississipi",
     category: "sandalias",
@@ -547,6 +591,7 @@ export const products: Product[] = [
   },
   {
     slug: "rasteira-nude-pedraria",
+    code: "E35-042",
     name: "Rasteira Nude Pedraria",
     brand: "Mississipi",
     category: "sandalias",
@@ -559,6 +604,7 @@ export const products: Product[] = [
   },
   {
     slug: "tamanco-verde-slide",
+    code: "E35-043",
     name: "Tamanco Verde Slide",
     brand: "Mississipi",
     category: "sandalias",
@@ -573,6 +619,7 @@ export const products: Product[] = [
   },
   {
     slug: "rasteira-caramelo-tiras",
+    code: "E35-044",
     name: "Rasteira Caramelo Tiras",
     brand: "Mississipi",
     category: "sandalias",
@@ -585,6 +632,7 @@ export const products: Product[] = [
   },
   {
     slug: "sandalia-caramelo-salto-taca",
+    code: "E35-045",
     name: "Sandália Caramelo Salto Taça",
     brand: "Mississipi",
     category: "sandalias",
@@ -599,6 +647,7 @@ export const products: Product[] = [
   },
   {
     slug: "sandalia-caramelo-trancada",
+    code: "E35-046",
     name: "Sandália Caramelo Trançada",
     brand: "Mississipi",
     category: "sandalias",
@@ -611,6 +660,7 @@ export const products: Product[] = [
   },
   {
     slug: "mule-dourado-trancado",
+    code: "E35-047",
     name: "Mule Dourado Trançado",
     brand: "Campesí",
     category: "sandalias",
@@ -623,6 +673,7 @@ export const products: Product[] = [
   },
   {
     slug: "papete-bege-flatform",
+    code: "E35-048",
     name: "Papete Bege Flatform",
     brand: "Mississipi",
     category: "sandalias",
@@ -635,6 +686,7 @@ export const products: Product[] = [
   },
   {
     slug: "sandalia-caramelo-salto-bloco",
+    code: "E35-049",
     name: "Sandália Caramelo Salto Bloco",
     brand: "Mississipi",
     category: "sandalias",
@@ -647,6 +699,7 @@ export const products: Product[] = [
   },
   {
     slug: "sandalia-caramelo-fivela",
+    code: "E35-050",
     name: "Sandália Caramelo Fivela",
     brand: "Mississipi",
     category: "sandalias",
@@ -659,6 +712,7 @@ export const products: Product[] = [
   },
   {
     slug: "papete-caramelo-velcro",
+    code: "E35-051",
     name: "Papete Caramelo Velcro",
     brand: "Mississipi",
     category: "sandalias",
@@ -671,6 +725,7 @@ export const products: Product[] = [
   },
   {
     slug: "sandalia-caramelo-salto-baixo",
+    code: "E35-052",
     name: "Sandália Caramelo Salto Baixo",
     brand: "Mississipi",
     category: "sandalias",
@@ -683,6 +738,7 @@ export const products: Product[] = [
   },
   {
     slug: "mule-off-white-conforto",
+    code: "E35-053",
     name: "Mule Off-White Conforto",
     brand: "Mississipi",
     category: "sapatos",
@@ -694,19 +750,21 @@ export const products: Product[] = [
     images: ["/imagens/espaco35-55.jpg"],
   },
   {
-    slug: "papete-off-white-dupla",
-    name: "Papete Off-White Dupla",
-    brand: "Mississipi",
+    slug: "tamanco-bege-perfurado-fivela",
+    code: "E35-054",
+    name: "Tamanco Bege Perfurado Fivela",
+    brand: "Campesí",
     category: "sandalias",
     price: 69.9,
     compareAtPrice: 100,
-    description: "Papete off-white de tira dupla. Minimalista.",
+    description: "Tamanco bege perfurado com fivela dourada. Conforto inteligente.",
     sizes: SIZE,
-    colors: ["Off-White"],
+    colors: ["Bege"],
     images: ["/imagens/espaco35-56.jpg"],
   },
   {
     slug: "rasteira-dourada-tachas",
+    code: "E35-055",
     name: "Rasteira Dourada Tachas",
     brand: "Mississipi",
     category: "sandalias",
@@ -719,6 +777,7 @@ export const products: Product[] = [
   },
   {
     slug: "tenis-branco-recorte-caramelo",
+    code: "E35-056",
     name: "Tênis Branco Recorte Caramelo",
     brand: "Mississipi",
     category: "tenis",
@@ -731,6 +790,7 @@ export const products: Product[] = [
   },
   {
     slug: "sandalia-rose-strass",
+    code: "E35-057",
     name: "Sandália Rosê Strass",
     brand: "Campesí",
     category: "sandalias",
@@ -745,6 +805,7 @@ export const products: Product[] = [
   },
   {
     slug: "papete-caramelo-tiras-finas",
+    code: "E35-058",
     name: "Papete Caramelo Tiras Finas",
     brand: "Mississipi",
     category: "sandalias",
@@ -757,6 +818,7 @@ export const products: Product[] = [
   },
   {
     slug: "sandalia-dourada-salto-tiras",
+    code: "E35-059",
     name: "Sandália Dourada Salto Tiras",
     brand: "Mississipi",
     category: "sandalias",
@@ -769,6 +831,7 @@ export const products: Product[] = [
   },
   {
     slug: "tenis-off-white-cadarco",
+    code: "E35-060",
     name: "Tênis Off-White Cadarço",
     brand: "Mississipi",
     category: "tenis",
@@ -781,6 +844,7 @@ export const products: Product[] = [
   },
   {
     slug: "tenis-rose-casual",
+    code: "E35-061",
     name: "Tênis Rosê Casual",
     brand: "Mississipi",
     category: "tenis",
@@ -795,6 +859,7 @@ export const products: Product[] = [
   },
   {
     slug: "tenis-bege-matelasse",
+    code: "E35-062",
     name: "Tênis Bege Matelassê",
     brand: "Mississipi",
     category: "tenis",
@@ -809,6 +874,7 @@ export const products: Product[] = [
   },
   {
     slug: "tenis-off-white-plataforma",
+    code: "E35-063",
     name: "Tênis Off-White Plataforma",
     brand: "Mississipi",
     category: "tenis",
@@ -820,31 +886,8 @@ export const products: Product[] = [
     images: ["/imagens/espaco35-65.jpg"],
   },
   {
-    slug: "sandalia-nude-tiras-finas-mod",
-    name: "Sandália Nude Tiras Finas",
-    brand: "Mississipi",
-    category: "sandalias",
-    price: 69.9,
-    compareAtPrice: 100,
-    description: "Sandália nude de tiras finas. Modelo novo e original.",
-    sizes: SIZE,
-    colors: ["Nude"],
-    images: ["/imagens/espaco35-73.jpg"],
-  },
-  {
-    slug: "sandalia-caramelo-dedo",
-    name: "Sandália Caramelo Dedo",
-    brand: "Mississipi",
-    category: "sandalias",
-    price: 69.9,
-    compareAtPrice: 100,
-    description: "Sandália caramelo rasteira de dedo. Modelo novo e original.",
-    sizes: SIZE,
-    colors: ["Caramelo"],
-    images: ["/imagens/espaco35-67.jpg"],
-  },
-  {
     slug: "mule-off-white-cruzado",
+    code: "E35-064",
     name: "Mule Off-White Tiras Cruzadas",
     brand: "Mississipi",
     category: "sapatos",
@@ -856,15 +899,17 @@ export const products: Product[] = [
     images: ["/imagens/espaco35-74.jpg"],
   },
   {
-    slug: "tenis-branco-casual",
-    name: "Tênis Branco Casual",
+    slug: "tenis-branco-coracoes",
+    code: "E35-065",
+    name: "Tênis Branco Corações",
     brand: "Mississipi",
     category: "tenis",
     price: 69.9,
     compareAtPrice: 100,
-    description: "Tênis branco casual. Modelo novo e original.",
+    description:
+      "Tênis branco com costura de corações e solado bege. Confortável pro dia a dia.",
     sizes: SIZE,
-    colors: ["Branco"],
+    colors: ["Branco", "Bege"],
     images: ["/imagens/espaco35-72.jpg"],
   },
 ];
