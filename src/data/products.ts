@@ -450,7 +450,7 @@ export const products: Product[] = [
     compareAtPrice: 100,
     description: "Rasteira bege com florzinhas brancas e solado tratorado. Fofa e leve.",
     sizes: SIZE,
-    colors: ["Dourado"],
+    colors: ["Bege"],
     images: ["/imagens/espaco35-32.jpg"],
     featured: true,
     lastUnits: true,
@@ -465,7 +465,7 @@ export const products: Product[] = [
     compareAtPrice: 100,
     description: "Sandália flatform off-white com tiras acolchoadas e strass. Conforto com brilho.",
     sizes: SIZE,
-    colors: ["Nude"],
+    colors: ["Off-White"],
     images: ["/imagens/espaco35-33.jpg"],
   },
   {
@@ -545,7 +545,7 @@ export const products: Product[] = [
     compareAtPrice: 100,
     description: "Sandália prata flatform com tiras em nó e strass. Moderna e iluminada.",
     sizes: SIZE,
-    colors: ["Dourado"],
+    colors: ["Prata"],
     images: ["/imagens/espaco35-39.jpg"],
   },
   {
@@ -627,7 +627,7 @@ export const products: Product[] = [
     compareAtPrice: 100,
     description: "Rasteira bronze metálica com tira de strass. Brilho no passo.",
     sizes: SIZE,
-    colors: ["Caramelo"],
+    colors: ["Bronze"],
     images: ["/imagens/espaco35-46.jpg"],
   },
   {
@@ -655,7 +655,7 @@ export const products: Product[] = [
     compareAtPrice: 100,
     description: "Sandália flatform bronze com trança dourada. Charmosa.",
     sizes: SIZE,
-    colors: ["Caramelo"],
+    colors: ["Bronze"],
     images: ["/imagens/espaco35-48.jpg"],
   },
   {
@@ -668,7 +668,7 @@ export const products: Product[] = [
     compareAtPrice: 100,
     description: "Mule off-white com trança, strass e palmilha conforto. Dois ângulos do mesmo par.",
     sizes: SIZE,
-    colors: ["Dourado"],
+    colors: ["Off-White"],
     images: ["/imagens/espaco35-49.jpg", "/imagens/espaco35-74.jpg"],
   },
   {
@@ -681,7 +681,7 @@ export const products: Product[] = [
     compareAtPrice: 100,
     description: "Tamanco off-white de tiras cruzadas com fivelinhas douradas. Conforto inteligente.",
     sizes: SIZE,
-    colors: ["Bege"],
+    colors: ["Off-White"],
     images: ["/imagens/espaco35-50.jpg"],
   },
   {
@@ -720,7 +720,7 @@ export const products: Product[] = [
     compareAtPrice: 100,
     description: "Papete bege perfurada com velcro e palmilha massageadora. Conforto regulável.",
     sizes: SIZE,
-    colors: ["Caramelo"],
+    colors: ["Bege"],
     images: ["/imagens/espaco35-53.jpg"],
   },
   {
@@ -746,7 +746,7 @@ export const products: Product[] = [
     compareAtPrice: 100,
     description: "Sandália branca flatform de dedo com fivela. Clean e prática.",
     sizes: SIZE,
-    colors: ["Off-White"],
+    colors: ["Branco"],
     images: ["/imagens/espaco35-55.jpg"],
   },
   {
