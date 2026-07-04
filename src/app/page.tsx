@@ -67,13 +67,14 @@ export default function Home() {
               </a>
             </div>
           </div>
-          <div className="relative aspect-[4/5] overflow-hidden rounded-2xl bg-nude shadow-[0_30px_60px_-30px_rgba(47,41,37,0.25)]">
+          <div className="relative aspect-square overflow-hidden rounded-2xl bg-nude shadow-[0_30px_60px_-30px_rgba(47,41,37,0.25)]">
             <Image
               src="/imagens/espaco35-68.jpg"
               alt="Calçado feminino Espaço 35 tamanho 35"
               fill
               sizes="(max-width: 768px) 100vw, 50vw"
               className="object-cover"
+              style={{ objectPosition: "45% 50%" }}
               priority
             />
             <span className="absolute bottom-5 left-5 rounded-xl bg-card/90 px-4 py-2.5 text-[12.5px] tracking-wide backdrop-blur">
@@ -139,8 +140,8 @@ export default function Home() {
       {/* INSTITUCIONAL */}
       <section className="bg-nude">
         <div className="mx-auto grid max-w-6xl items-center gap-14 px-6 py-24 md:grid-cols-2">
-          <div className="relative aspect-[4/5] overflow-hidden rounded-2xl bg-card">
-            <Image src="/imagens/espaco35-66.jpg" alt="Espaço 35 calçados" fill sizes="(max-width: 768px) 100vw, 50vw" className="object-cover" />
+          <div className="relative aspect-square overflow-hidden rounded-2xl bg-card">
+            <Image src="/imagens/espaco35-66.jpg" alt="Espaço 35 calçados" fill sizes="(max-width: 768px) 100vw, 50vw" className="object-cover" style={{ objectPosition: "45% 50%" }} />
           </div>
           <div>
             <span className="text-xs font-semibold uppercase tracking-[0.28em] text-brand">Sobre a loja</span>
