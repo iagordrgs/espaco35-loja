@@ -889,7 +889,7 @@ export const products: Product[] = [
     slug: "mule-off-white-cruzado",
     code: "E35-064",
     name: "Mule Off-White Tiras Cruzadas",
-    brand: "Mississipi",
+    brand: "Campesí",
     category: "sapatos",
     price: 69.9,
     compareAtPrice: 100,
