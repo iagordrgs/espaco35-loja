@@ -14,6 +14,7 @@ export type Product = {
   images: string[];
   featured?: boolean; // aparece na seção "Destaques" da home
   lastUnits?: boolean; // mostra o selo "Últimas unidades" no card
+  soldOut?: boolean; // true = par já vendido: fica no site com o selo "Vendido" e sem botão de compra
 };
 
 /*
@@ -905,13 +906,23 @@ export function getProduct(slug: string): Product | undefined {
   return products.find((p) => p.slug === slug);
 }
 
+export function isAvailable(p: Product): boolean {
+  return !p.soldOut;
+}
+
 export function getProductsByCategory(category?: Category): Product[] {
-  if (!category) return products;
-  return products.filter((p) => p.category === category);
+  const list = category ? products.filter((p) => p.category === category) : products;
+  // pares vendidos vão para o fim da lista (a ordem entre os demais não muda)
+  return [...list].sort((a, b) => Number(!isAvailable(a)) - Number(!isAvailable(b)));
+}
+
+// Só mostra no menu a categoria que tem par: "Botas" existe no tipo, mas hoje não há nenhuma bota.
+export function getActiveCategories(): { key: Category; label: string }[] {
+  return categories.filter((c) => products.some((p) => p.category === c.key));
 }
 
 export function getFeatured(): Product[] {
-  return products.filter((p) => p.featured);
+  return products.filter((p) => p.featured && isAvailable(p));
 }
 
 export const formatPrice = (value: number | null) =>

@@ -8,10 +8,10 @@ import {
   formatPrice,
   getProduct,
   getProductsByCategory,
+  isAvailable,
   products,
 } from "@/data/products";
-
-const WHATSAPP = "5585992442091";
+import { linkWhatsApp } from "@/lib/site";
 
 export function generateStaticParams() {
   return products.map((p) => ({ slug: p.slug }));
@@ -92,18 +92,29 @@ export default async function ProductPage({
 
           <AddToCart product={product} />
 
-          <a
-            href={`https://wa.me/${WHATSAPP}?text=${encodeURIComponent(
-              `Oi! 💛 Tenho interesse no(a) ${product.brand} ${product.name} (Cód. ${product.code}, tam. 35) que vi no site. Ainda está disponível?`
-            )}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-4 inline-block w-full rounded-full border-2 border-brand px-8 py-3 text-center font-semibold text-brand transition hover:bg-brand hover:text-background sm:w-auto"
-          >
-            Comprar direto no WhatsApp
-          </a>
+          {isAvailable(product) && (
+            <a
+              href={linkWhatsApp(
+                `Oi! 💛 Tenho interesse no(a) ${product.brand} ${product.name} (Cód. ${product.code}, tam. 35) que vi no site. Ainda está disponível?`
+              )}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-4 inline-block w-full rounded-full border-2 border-brand px-8 py-3 text-center font-semibold text-brand transition hover:bg-brand hover:text-background sm:w-auto"
+            >
+              Comprar direto no WhatsApp
+            </a>
+          )}
           <p className="mt-3 text-xs text-muted">
             Par único no tamanho 35 — novo, original e com caixa.
+          </p>
+          <p className="mt-1 text-xs text-muted">
+            Você tem 7 dias para desistir da compra.{" "}
+            <Link
+              href="/trocas-e-devolucoes"
+              className="font-medium text-brand hover:underline"
+            >
+              Trocas e devoluções
+            </Link>
           </p>
         </div>
       </div>

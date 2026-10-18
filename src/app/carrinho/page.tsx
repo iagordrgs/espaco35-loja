@@ -2,15 +2,25 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { itemKey, useCart } from "@/context/CartContext";
+import AvisoIndisponiveis from "@/components/AvisoIndisponiveis";
+import { useCart } from "@/context/CartContext";
 import { formatPrice } from "@/data/products";
 
 export default function CarrinhoPage() {
-  const { items, removeItem, setQuantity, totalItems, totalPrice } = useCart();
+  const { hydrated, products, unavailable, remove, totalItems, totalPrice } =
+    useCart();
 
-  if (items.length === 0) {
+  // Antes de ler o carrinho do celular não dá para dizer que ele está vazio.
+  if (!hydrated) return <div className="min-h-[50vh]" aria-busy="true" />;
+
+  if (products.length === 0) {
     return (
       <div className="mx-auto max-w-2xl px-4 py-20 text-center">
+        {unavailable.length > 0 ? (
+          <div className="mb-8 text-left">
+            <AvisoIndisponiveis />
+          </div>
+        ) : null}
         <h1 className="text-2xl font-bold">Seu carrinho está vazio</h1>
         <p className="mt-2 text-muted">
           Que tal dar uma olhada na nossa coleção?
@@ -28,76 +38,61 @@ export default function CarrinhoPage() {
   return (
     <div className="mx-auto max-w-5xl px-4 py-10">
       <h1 className="text-3xl font-bold">Carrinho</h1>
-      <p className="mt-1 text-muted">{totalItems} item(ns)</p>
+      <p className="mt-1 text-muted">
+        {totalItems} {totalItems === 1 ? "par" : "pares"} · cada modelo é um
+        par único
+      </p>
+
+      {unavailable.length > 0 ? (
+        <div className="mt-6">
+          <AvisoIndisponiveis />
+        </div>
+      ) : null}
 
       <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_320px]">
-        {/* Itens */}
+        {/* Pares */}
         <ul className="space-y-4">
-          {items.map((item) => {
-            const key = itemKey(item);
-            return (
-              <li
-                key={key}
-                className="flex gap-4 rounded-xl border border-[var(--line)] bg-card p-4"
-              >
-                <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-lg bg-white">
-                  <Image
-                    src={item.image}
-                    alt={item.name}
-                    fill
-                    sizes="96px"
-                    className="object-cover"
-                  />
+          {products.map((p) => (
+            <li
+              key={p.slug}
+              className="flex gap-4 rounded-xl border border-[var(--line)] bg-card p-4"
+            >
+              <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-lg bg-white">
+                <Image
+                  src={p.images[0]}
+                  alt={p.name}
+                  fill
+                  sizes="96px"
+                  className="object-contain p-1"
+                />
+              </div>
+              <div className="flex flex-1 flex-col">
+                <div className="flex justify-between gap-2">
+                  <Link
+                    href={`/produtos/${p.slug}`}
+                    className="font-medium hover:text-brand"
+                  >
+                    {p.name}
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => remove(p.slug)}
+                    className="text-sm text-muted hover:text-red-600"
+                  >
+                    Remover
+                  </button>
                 </div>
-                <div className="flex flex-1 flex-col">
-                  <div className="flex justify-between gap-2">
-                    <Link
-                      href={`/produtos/${item.slug}`}
-                      className="font-medium hover:text-brand"
-                    >
-                      {item.name}
-                    </Link>
-                    <button
-                      type="button"
-                      onClick={() => removeItem(key)}
-                      className="text-sm text-muted hover:text-red-600"
-                    >
-                      Remover
-                    </button>
-                  </div>
-                  <p className="text-sm text-muted">
-                    Tam. {item.size} · {item.color}
-                  </p>
-                  <div className="mt-auto flex items-center justify-between pt-2">
-                    <div className="inline-flex items-center rounded-lg border border-[var(--line)]">
-                      <button
-                        type="button"
-                        onClick={() => setQuantity(key, item.quantity - 1)}
-                        className="px-3 py-1 hover:text-brand"
-                        aria-label="Diminuir"
-                      >
-                        −
-                      </button>
-                      <span className="w-8 text-center text-sm">
-                        {item.quantity}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => setQuantity(key, item.quantity + 1)}
-                        className="px-3 py-1 hover:text-brand"
-                        aria-label="Aumentar"
-                      >
-                        +
-                      </button>
-                    </div>
-                    <span className="font-semibold text-brand">
-                      {formatPrice(item.price * item.quantity)}
-                    </span>
-                  </div>
+                <p className="text-sm text-muted">
+                  Cód. {p.code} · Tam. {p.sizes.join(", ")} · {p.colors.join(" e ")}
+                </p>
+                <div className="mt-auto pt-2 text-right">
+                  <span className="font-semibold text-brand">
+                    {formatPrice(p.price)}
+                  </span>
                 </div>
-              </li>
-            );
-          })}
+              </div>
+            </li>
+          ))}
         </ul>
 
         {/* Resumo */}

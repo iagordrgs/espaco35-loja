@@ -2,11 +2,10 @@ import Image from "next/image";
 import Link from "next/link";
 import ProductCard from "@/components/ProductCard";
 import { getFeatured } from "@/data/products";
+import { INSTAGRAM, linkWhatsApp } from "@/lib/site";
 
-const WA =
-  "https://wa.me/5585992442091?text=" +
-  encodeURIComponent("Olá! Vim pelo site da Espaço 35 e quero saber mais 🤍");
-const IG = "https://instagram.com/espaco35calcados";
+const WA = linkWhatsApp("Olá! Vim pelo site da Espaço 35 e quero saber mais 🤍");
+const IG = `https://instagram.com/${INSTAGRAM}`;
 
 const cats = [
   { label: "Sandálias", href: "/produtos?categoria=sandalias", img: "/imagens/espaco35-09.jpg" },
@@ -23,11 +22,10 @@ const beneficios = [
   "Atendimento no WhatsApp",
 ];
 
-const depoimentos = [
-  { txt: "Achar sapato lindo no 35 era impossível. Aqui virou meu cantinho favorito.", nome: "Marina", cidade: "Fortaleza" },
-  { txt: "Chegou novinho, na caixa e exatamente como na foto. Atendimento um amor.", nome: "Letícia", cidade: "Eusébio" },
-  { txt: "Cada par é escolhido com carinho, dá pra ver. Já virei cliente fiel.", nome: "Camila", cidade: "Caucaia" },
-];
+// Depoimentos REAIS, com autorização da cliente (print da conversa vale ouro). Enquanto esta lista estiver
+// vazia, a seção "Quem comprou" nem aparece na página. Formato de cada um:
+//   { txt: "o que ela disse", nome: "Primeiro nome", cidade: "Cidade" },
+const depoimentos: { txt: string; nome: string; cidade: string }[] = [];
 
 const igFotos = [16, 32, 45, 47, 63, 55];
 
@@ -165,24 +163,26 @@ export default function Home() {
         </div>
       </section>
 
-      {/* DEPOIMENTOS */}
-      <section className="mx-auto max-w-6xl px-6 py-20">
-        <div className="mx-auto mb-12 max-w-xl text-center">
-          <span className="text-xs font-semibold uppercase tracking-[0.28em] text-brand">Quem comprou</span>
-          <h2 className="mt-3 font-serif text-3xl">Clientes Espaço 35</h2>
-        </div>
-        <div className="grid gap-6 md:grid-cols-3">
-          {depoimentos.map((d) => (
-            <div key={d.nome} className="rounded-2xl border border-[var(--line)] bg-card p-8">
-              <div className="tracking-[3px] text-brand">★★★★★</div>
-              <p className="mt-4 font-serif text-lg italic">“{d.txt}”</p>
-              <div className="mt-5 text-[13px] text-muted">
-                <b className="font-semibold text-foreground">{d.nome}</b> · {d.cidade}
+      {/* DEPOIMENTOS: só aparece quando houver depoimento real em `depoimentos` (no alto deste arquivo) */}
+      {depoimentos.length > 0 && (
+        <section className="mx-auto max-w-6xl px-6 py-20">
+          <div className="mx-auto mb-12 max-w-xl text-center">
+            <span className="text-xs font-semibold uppercase tracking-[0.28em] text-brand">Quem comprou</span>
+            <h2 className="mt-3 font-serif text-3xl">Clientes Espaço 35</h2>
+          </div>
+          <div className="grid gap-6 md:grid-cols-3">
+            {depoimentos.map((d) => (
+              <div key={d.nome} className="rounded-2xl border border-[var(--line)] bg-card p-8">
+                <div className="tracking-[3px] text-brand">★★★★★</div>
+                <p className="mt-4 font-serif text-lg italic">“{d.txt}”</p>
+                <div className="mt-5 text-[13px] text-muted">
+                  <b className="font-semibold text-foreground">{d.nome}</b> · {d.cidade}
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
-      </section>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* INSTAGRAM */}
       <section className="mx-auto max-w-6xl px-6 pb-24">

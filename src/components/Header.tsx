@@ -3,7 +3,10 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useCart } from "@/context/CartContext";
-import { categories } from "@/data/products";
+import { getActiveCategories } from "@/data/products";
+
+// só as categorias que têm par (hoje não há botas)
+const categories = getActiveCategories();
 
 export default function Header() {
   const { totalItems } = useCart();

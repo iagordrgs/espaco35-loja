@@ -1,9 +1,19 @@
-import Link from "next/link";
+"use client";
 
-const WA = "https://wa.me/5585992442091?text=" +
-  encodeURIComponent("Olá! Vim pelo site da Espaço 35 e quero saber mais sobre um par 🤍");
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { linkWhatsApp } from "@/lib/site";
+
+const WA = linkWhatsApp("Olá! Vim pelo site da Espaço 35 e quero saber mais sobre um par 🤍");
+
+// No carrinho e no fechar pedido o botão principal já é o WhatsApp — e este balão cobria a ponta dele no celular
+// (um toque ali abria a conversa sem o pedido pronto).
+const SEM_BALAO = ["/carrinho", "/checkout"];
 
 export default function WhatsAppFloat() {
+  const pathname = usePathname();
+  if (SEM_BALAO.includes(pathname)) return null;
+
   return (
     <Link
       href={WA}

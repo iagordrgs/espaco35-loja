@@ -5,6 +5,7 @@ import { CartProvider } from "@/context/CartContext";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import WhatsAppFloat from "@/components/WhatsAppFloat";
+import { SITE_URL } from "@/lib/site";
 
 const manrope = Manrope({
   variable: "--font-manrope",
@@ -13,7 +14,7 @@ const manrope = Manrope({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://espaco35-loja.vercel.app"),
+  metadataBase: new URL(SITE_URL),
   title: {
     default: "Espaço 35 | Calçados Femininos Tamanho 35 · Fortaleza",
     template: "%s · Espaço 35",

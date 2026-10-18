@@ -1,7 +1,8 @@
 import Link from "next/link";
+import { HORARIO, INSTAGRAM, VENDEDOR, linkWhatsApp } from "@/lib/site";
 
-const WA = "https://wa.me/5585992442091";
-const IG = "https://instagram.com/espaco35calcados";
+const WA = linkWhatsApp();
+const IG = `https://instagram.com/${INSTAGRAM}`;
 
 export default function Footer() {
   return (
@@ -32,8 +33,8 @@ export default function Footer() {
             <h4 className="font-serif text-lg text-white">Contato</h4>
             <ul className="mt-4 space-y-2 text-[13.5px] text-[#C9C0B5]">
               <li>Fortaleza – CE</li>
-              <li><a href={IG} target="_blank" rel="noopener noreferrer" className="hover:text-brand">@espaco35calcados</a></li>
-              <li>Seg a Sáb · 9h às 18h</li>
+              <li><a href={IG} target="_blank" rel="noopener noreferrer" className="hover:text-brand">@{INSTAGRAM}</a></li>
+              <li>{HORARIO}</li>
             </ul>
           </div>
 
@@ -53,9 +54,26 @@ export default function Footer() {
           </div>
         </div>
 
-        <div className="mt-14 border-t border-[var(--line)] pt-6 text-center text-[12px] tracking-wide text-[#9a9087]">
-          © {new Date().getFullYear()} Espaço 35 · Pares originais, novos e com
-          caixa · Sujeito a disponibilidade
+        <div className="mt-14 border-t border-[var(--line)] pt-6 text-center text-[12px] leading-6 tracking-wide text-[#9a9087]">
+          <p>
+            <Link
+              href="/trocas-e-devolucoes"
+              className="underline underline-offset-4 hover:text-brand"
+            >
+              Trocas e devoluções
+            </Link>
+          </p>
+          {VENDEDOR.nomeEmpresarial && VENDEDOR.documento ? (
+            <p className="mt-2">
+              {VENDEDOR.nomeEmpresarial} · {VENDEDOR.documento}
+              {VENDEDOR.endereco ? ` · ${VENDEDOR.endereco}` : ""}
+              {VENDEDOR.email ? ` · ${VENDEDOR.email}` : ""}
+            </p>
+          ) : null}
+          <p className="mt-2">
+            © {new Date().getFullYear()} Espaço 35 · Pares originais, novos e
+            com caixa · Sujeito a disponibilidade
+          </p>
         </div>
       </div>
     </footer>

@@ -8,74 +8,90 @@ import {
   useReducer,
   type ReactNode,
 } from "react";
+import { getProduct, isAvailable, type Product } from "@/data/products";
 
-export type CartItem = {
-  slug: string;
-  name: string;
-  price: number;
-  image: string;
-  size: number;
-  color: string;
-  quantity: number;
-};
+/*
+ * Cada modelo é UM par (único, tamanho 35). Então o carrinho guarda só QUAIS pares a cliente escolheu
+ * (o slug de cada um). Nome, foto, preço e se o par ainda está à venda vêm sempre do catálogo de agora:
+ * o preço mudou ou o par foi vendido -> o carrinho já reflete isso, sem valor velho guardado no celular.
+ */
 
-type CartState = { items: CartItem[] };
+const STORAGE_KEY = "espaco35-cart-v2";
+const CHAVE_ANTIGA = "espaco35-cart"; // versão anterior: lista de itens com preço e quantidade
+
+export type ParIndisponivel = { slug: string; name: string | null };
+
+type CartState = { slugs: string[]; hydrated: boolean };
 
 type CartAction =
-  | { type: "ADD"; item: CartItem }
-  | { type: "REMOVE"; key: string }
-  | { type: "SET_QTY"; key: string; quantity: number }
-  | { type: "CLEAR" }
-  | { type: "HYDRATE"; items: CartItem[] };
-
-const STORAGE_KEY = "espaco35-cart";
-
-// Chave única por variação (produto + tamanho + cor).
-export const itemKey = (i: Pick<CartItem, "slug" | "size" | "color">) =>
-  `${i.slug}__${i.size}__${i.color}`;
+  | { type: "HYDRATE"; slugs: string[] }
+  | { type: "ADD"; slug: string }
+  | { type: "REMOVE"; slug: string }
+  | { type: "REMOVE_MANY"; slugs: string[] }
+  | { type: "CLEAR" };
 
 function reducer(state: CartState, action: CartAction): CartState {
   switch (action.type) {
     case "HYDRATE":
-      return { items: action.items };
-    case "ADD": {
-      const key = itemKey(action.item);
-      const existing = state.items.find((i) => itemKey(i) === key);
-      if (existing) {
-        return {
-          items: state.items.map((i) =>
-            itemKey(i) === key
-              ? { ...i, quantity: i.quantity + action.item.quantity }
-              : i
-          ),
-        };
-      }
-      return { items: [...state.items, action.item] };
-    }
+      return { slugs: action.slugs, hydrated: true };
+    case "ADD":
+      // par único: adicionar de novo não faz nada
+      return state.slugs.includes(action.slug)
+        ? state
+        : { ...state, slugs: [...state.slugs, action.slug] };
     case "REMOVE":
-      return { items: state.items.filter((i) => itemKey(i) !== action.key) };
-    case "SET_QTY":
+      return { ...state, slugs: state.slugs.filter((s) => s !== action.slug) };
+    case "REMOVE_MANY":
       return {
-        items: state.items
-          .map((i) =>
-            itemKey(i) === action.key
-              ? { ...i, quantity: Math.max(1, action.quantity) }
-              : i
-          )
-          .filter((i) => i.quantity > 0),
+        ...state,
+        slugs: state.slugs.filter((s) => !action.slugs.includes(s)),
       };
     case "CLEAR":
-      return { items: [] };
+      return { ...state, slugs: [] };
     default:
       return state;
   }
 }
 
+// Lê o carrinho do celular. Aceita também o formato da versão anterior (itens com slug, preço e quantidade):
+// só o slug é aproveitado, e a quantidade vira sempre 1.
+function lerSlugs(): string[] {
+  const unicos = new Set<string>();
+  const juntar = (bruto: string | null) => {
+    if (!bruto) return;
+    try {
+      const lista: unknown = JSON.parse(bruto);
+      if (!Array.isArray(lista)) return;
+      for (const item of lista) {
+        const slug =
+          typeof item === "string" ? item : (item as { slug?: unknown } | null)?.slug;
+        if (typeof slug === "string" && slug) unicos.add(slug);
+      }
+    } catch {
+      // dado corrompido: ignora
+    }
+  };
+  try {
+    juntar(localStorage.getItem(STORAGE_KEY));
+    juntar(localStorage.getItem(CHAVE_ANTIGA));
+    localStorage.removeItem(CHAVE_ANTIGA);
+  } catch {
+    // storage indisponível — segue com o carrinho vazio
+  }
+  return [...unicos];
+}
+
 type CartContextValue = {
-  items: CartItem[];
-  addItem: (item: CartItem) => void;
-  removeItem: (key: string) => void;
-  setQuantity: (key: string, quantity: number) => void;
+  /** o carrinho já foi lido do celular (antes disso, não dá para dizer que está vazio) */
+  hydrated: boolean;
+  /** pares do carrinho que ainda estão à venda, na ordem em que foram escolhidos */
+  products: Product[];
+  /** pares que estavam no carrinho e já foram vendidos ou saíram do site */
+  unavailable: ParIndisponivel[];
+  has: (slug: string) => boolean;
+  add: (slug: string) => void;
+  remove: (slug: string) => void;
+  removeUnavailable: () => void;
   clear: () => void;
   totalItems: number;
   totalPrice: number;
@@ -84,44 +100,45 @@ type CartContextValue = {
 const CartContext = createContext<CartContextValue | null>(null);
 
 export function CartProvider({ children }: { children: ReactNode }) {
-  const [state, dispatch] = useReducer(reducer, { items: [] });
+  const [state, dispatch] = useReducer(reducer, { slugs: [], hydrated: false });
 
-  // Hidrata do localStorage no mount.
+  // Lê do celular quando a página abre.
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) dispatch({ type: "HYDRATE", items: JSON.parse(raw) });
-    } catch {
-      // ignora dados corrompidos
-    }
+    dispatch({ type: "HYDRATE", slugs: lerSlugs() });
   }, []);
 
-  // Persiste a cada mudança.
+  // Guarda a cada mudança (só depois de ler, para não apagar o carrinho que estava salvo).
   useEffect(() => {
+    if (!state.hydrated) return;
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state.items));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state.slugs));
     } catch {
       // storage indisponível — segue sem persistir
     }
-  }, [state.items]);
+  }, [state.slugs, state.hydrated]);
 
   const value = useMemo<CartContextValue>(() => {
-    const totalItems = state.items.reduce((sum, i) => sum + i.quantity, 0);
-    const totalPrice = state.items.reduce(
-      (sum, i) => sum + i.price * i.quantity,
-      0
-    );
+    const products: Product[] = [];
+    const unavailable: ParIndisponivel[] = [];
+    for (const slug of state.slugs) {
+      const produto = getProduct(slug);
+      if (produto && isAvailable(produto)) products.push(produto);
+      else unavailable.push({ slug, name: produto?.name ?? null });
+    }
     return {
-      items: state.items,
-      addItem: (item) => dispatch({ type: "ADD", item }),
-      removeItem: (key) => dispatch({ type: "REMOVE", key }),
-      setQuantity: (key, quantity) =>
-        dispatch({ type: "SET_QTY", key, quantity }),
+      hydrated: state.hydrated,
+      products,
+      unavailable,
+      has: (slug) => state.slugs.includes(slug),
+      add: (slug) => dispatch({ type: "ADD", slug }),
+      remove: (slug) => dispatch({ type: "REMOVE", slug }),
+      removeUnavailable: () =>
+        dispatch({ type: "REMOVE_MANY", slugs: unavailable.map((u) => u.slug) }),
       clear: () => dispatch({ type: "CLEAR" }),
-      totalItems,
-      totalPrice,
+      totalItems: products.length,
+      totalPrice: products.reduce((soma, p) => soma + (p.price ?? 0), 0),
     };
-  }, [state.items]);
+  }, [state]);
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 }

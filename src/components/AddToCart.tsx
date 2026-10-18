@@ -1,129 +1,56 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { useCart } from "@/context/CartContext";
-import type { Product } from "@/data/products";
+import { isAvailable, type Product } from "@/data/products";
 
+// Cada modelo é um par único no tamanho 35: não há tamanho nem quantidade para escolher.
 export default function AddToCart({ product }: { product: Product }) {
-  const { addItem } = useCart();
-  const [size, setSize] = useState<number | null>(null);
-  const [color, setColor] = useState<string>(product.colors[0]);
-  const [quantity, setQuantity] = useState(1);
-  const [added, setAdded] = useState(false);
-  const [error, setError] = useState(false);
-
-  function handleAdd() {
-    if (size === null) {
-      setError(true);
-      return;
-    }
-    addItem({
-      slug: product.slug,
-      name: product.name,
-      price: product.price ?? 0,
-      image: product.images[0],
-      size,
-      color,
-      quantity,
-    });
-    setAdded(true);
-    setError(false);
-    setTimeout(() => setAdded(false), 2500);
-  }
+  const { add, has } = useCart();
+  const vendido = !isAvailable(product);
+  const noCarrinho = has(product.slug);
 
   return (
     <div className="mt-8 space-y-6">
-      <div>
-        <label className="text-sm font-semibold">Cor</label>
-        <div className="mt-2 flex flex-wrap gap-2">
-          {product.colors.map((c) => (
-            <button
-              key={c}
-              type="button"
-              onClick={() => setColor(c)}
-              className={`rounded-full border px-4 py-1.5 text-sm transition ${
-                color === c
-                  ? "border-brand bg-brand text-background"
-                  : "border-[var(--line)] hover:border-brand/60"
-              }`}
-            >
-              {c}
-            </button>
-          ))}
-        </div>
-      </div>
+      <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-sm">
+        <dt className="font-semibold">Tamanho</dt>
+        <dd>{product.sizes.join(", ")}</dd>
+        <dt className="font-semibold">Cor</dt>
+        <dd>{product.colors.join(" e ")}</dd>
+      </dl>
 
-      <div>
-        <label className="text-sm font-semibold">
-          Tamanho{" "}
-          {error && (
-            <span className="font-normal text-red-600">
-              — selecione um tamanho
-            </span>
-          )}
-        </label>
-        <div className="mt-2 flex flex-wrap gap-2">
-          {product.sizes.map((s) => (
-            <button
-              key={s}
-              type="button"
-              onClick={() => {
-                setSize(s);
-                setError(false);
-              }}
-              className={`h-10 w-12 rounded-lg border text-sm font-medium transition ${
-                size === s
-                  ? "border-brand bg-brand text-background"
-                  : "border-[var(--line)] hover:border-brand/60"
-              }`}
-            >
-              {s}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div>
-        <label className="text-sm font-semibold">Quantidade</label>
-        <div className="mt-2 inline-flex items-center rounded-lg border border-[var(--line)]">
+      {vendido ? (
+        <div>
           <button
             type="button"
-            onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-            className="px-3 py-2 text-lg leading-none hover:text-brand"
-            aria-label="Diminuir"
+            disabled
+            className="cursor-not-allowed rounded-full bg-[var(--line)] px-8 py-3 font-semibold text-muted"
           >
-            −
+            Vendido
           </button>
-          <span className="w-10 text-center font-medium">{quantity}</span>
-          <button
-            type="button"
-            onClick={() => setQuantity((q) => q + 1)}
-            className="px-3 py-2 text-lg leading-none hover:text-brand"
-            aria-label="Aumentar"
-          >
-            +
-          </button>
+          <p className="mt-3 text-sm text-muted">
+            Esse par já foi vendido.{" "}
+            <Link href="/produtos" className="font-medium text-brand hover:underline">
+              Veja os outros modelos →
+            </Link>
+          </p>
         </div>
-      </div>
-
-      <div className="flex flex-wrap items-center gap-3">
+      ) : noCarrinho ? (
+        <Link
+          href="/carrinho"
+          className="inline-block rounded-full border-2 border-brand px-8 py-3 font-semibold text-brand transition hover:bg-brand hover:text-background"
+        >
+          ✓ No carrinho — ver carrinho
+        </Link>
+      ) : (
         <button
           type="button"
-          onClick={handleAdd}
+          onClick={() => add(product.slug)}
           className="rounded-full bg-brand px-8 py-3 font-semibold text-background transition hover:bg-accent"
         >
           Adicionar ao carrinho
         </button>
-        {added && (
-          <Link
-            href="/carrinho"
-            className="text-sm font-medium text-brand hover:underline"
-          >
-            ✓ Adicionado! Ver carrinho →
-          </Link>
-        )}
-      </div>
+      )}
     </div>
   );
 }
