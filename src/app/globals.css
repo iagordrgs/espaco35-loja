@@ -589,6 +589,9 @@ input[type="search"]::-webkit-search-decoration { -webkit-appearance: none; }
 .whatsapp-float { bottom: calc(22px + env(safe-area-inset-bottom)); right: calc(22px + env(safe-area-inset-right)); transition: transform .3s ease, opacity .3s ease, background .2s; }
 .whatsapp-float.is-hidden { opacity: 0; transform: translateY(16px) scale(.9); pointer-events: none; }
 
+/* JavaScript não carregou (celular antigo): tudo visível, sem animação de entrada */
+.sem-animacao main [style*="opacity"], .sem-animacao main [style*="transform"] { opacity: 1 !important; transform: none !important; }
+
 /* no toque o :hover "gruda" depois do tap: tira os deslocamentos de hover em telas sem mouse */
 @media (hover: none) {
   .button:hover, .favorite-toggle:hover, .whatsapp-float:hover { transform: none; }
@@ -601,6 +604,8 @@ input[type="search"]::-webkit-search-decoration { -webkit-appearance: none; }
   .announcement-bar a { display: inline-flex; align-items: center; min-height: 38px; }
   .brand-name { font-size: 14px; }
   .brand-name span { font-size: 8px; letter-spacing: .14em; }
+  .header-inner { gap: 8px; }
+  .header-actions { gap: 2px; }
   .header-icon-link { min-width: 44px; }
   .menu-toggle { width: 44px; height: 44px; }
   .mobile-nav a { min-height: 52px; font-size: 16px; }
@@ -670,8 +675,16 @@ input[type="search"]::-webkit-search-decoration { -webkit-appearance: none; }
   .clear-filters { min-height: 44px; font-size: 13px; }
 }
 
+/* select com o visual do site (o Safari do iPhone aplica um fundo cinza próprio) */
+.filter-select {
+  -webkit-appearance: none; appearance: none; padding-right: 36px; border-radius: 0; background-color: #fff;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%23111' stroke-width='1.6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 14px center;
+}
+
 @media (max-width: 360px) {
   .announcement-bar > span { display: none; }
+  .catalog-tools { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 380px) {

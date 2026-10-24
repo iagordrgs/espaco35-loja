@@ -16,6 +16,11 @@ export const viewport: Viewport = {
   themeColor: "#101010",
 };
 
+// Segurança para celulares antigos: se o JavaScript do site não carregar em 3s, mostra tudo sem animação
+// (títulos e cards começam invisíveis para a animação de entrada). ES5 de propósito: roda em qualquer iPhone.
+const SCRIPT_SEGURANCA =
+  "setTimeout(function(){var d=document.documentElement;if(!d.getAttribute('data-hidratado')){d.className+=' sem-animacao'}},3000)";
+
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
@@ -45,7 +50,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR" className={`${manrope.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <script dangerouslySetInnerHTML={{ __html: SCRIPT_SEGURANCA }} />
+        {children}
+      </body>
     </html>
   );
 }
