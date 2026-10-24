@@ -8,7 +8,7 @@ import { useCart } from "@/context/CartContext";
 import { useFavorites } from "@/context/FavoritesContext";
 import Reveal from "@/components/Reveal";
 
-export default function ProductCard({ product }: { product: Product }) {
+export default function ProductCard({ product, reveal = true }: { product: Product; reveal?: boolean }) {
   const { add, has: inCart } = useCart();
   const { has: isFavorite, toggle } = useFavorites();
   const [notice, setNotice] = useState("");
@@ -22,7 +22,7 @@ export default function ProductCard({ product }: { product: Product }) {
   }
 
   return (
-    <Reveal className="product-card">
+    <Reveal className="product-card" disabled={!reveal}>
       <div className="product-media">
         <Link href={`/produtos/${product.slug}`} className="product-image-link" aria-label={`Ver ${product.name}`}>
           <Image

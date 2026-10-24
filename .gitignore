@@ -39,3 +39,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+/.claude/
+
+# originais das artes geradas (PNG pesados)
+/.campanha-originais/
