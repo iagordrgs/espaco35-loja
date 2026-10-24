@@ -1,6 +1,7 @@
 import Link from "next/link";
 import CatalogBrowser from "@/components/CatalogBrowser";
 import { categories, getProductsByCategory, type Category } from "@/data/products";
+import { getCatalogo } from "@/lib/estoque";
 
 export default async function ProdutosPage({
   searchParams,
@@ -9,7 +10,8 @@ export default async function ProdutosPage({
 }) {
   const { categoria } = await searchParams;
   const active = categories.find((item) => item.key === categoria)?.key;
-  const list = getProductsByCategory(active as Category | undefined);
+  const catalogo = await getCatalogo();
+  const list = getProductsByCategory(active as Category | undefined, catalogo);
   const title = active ? categories.find((item) => item.key === active)?.label : "Toda a coleção";
 
   return (

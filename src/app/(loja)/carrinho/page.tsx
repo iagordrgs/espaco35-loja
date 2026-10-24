@@ -27,7 +27,7 @@ export default function CarrinhoPage() {
       <div className="cart-heading">
         <p className="page-kicker">Quase seu</p>
         <h1 className="page-title">Sua sacola<span style={{ color: "var(--brand)" }}>.</span></h1>
-        <p>{totalItems} {totalItems === 1 ? "par" : "pares"} selecionados · cada modelo é uma unidade única.</p>
+        <p>{totalItems} {totalItems === 1 ? "par selecionado" : "pares selecionados"} · cada modelo é uma unidade única.</p>
       </div>
       {unavailable.length > 0 && <div style={{ marginTop: 18 }}><AvisoIndisponiveis /></div>}
       <div className="cart-grid">

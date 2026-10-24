@@ -9,6 +9,8 @@ import {
   type ReactNode,
 } from "react";
 import { getProduct, isAvailable, type Product } from "@/data/products";
+import { useEstoque } from "@/context/EstoqueContext";
+import { aplicarEstoque } from "@/lib/estoque-regras";
 
 /*
  * Cada modelo é UM par (único, tamanho 35). Então o carrinho guarda só QUAIS pares a cliente escolheu
@@ -117,11 +119,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
   }, [state.slugs, state.hydrated]);
 
+  const estoque = useEstoque();
+
   const value = useMemo<CartContextValue>(() => {
     const products: Product[] = [];
     const unavailable: ParIndisponivel[] = [];
     for (const slug of state.slugs) {
-      const produto = getProduct(slug);
+      const base = getProduct(slug);
+      // situação do painel: par reservado ou vendido para outra cliente sai do total
+      const produto = base && aplicarEstoque(base, estoque);
       if (produto && isAvailable(produto)) products.push(produto);
       else unavailable.push({ slug, name: produto?.name ?? null });
     }
@@ -138,7 +144,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       totalItems: products.length,
       totalPrice: products.reduce((soma, p) => soma + (p.price ?? 0), 0),
     };
-  }, [state]);
+  }, [state, estoque]);
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 }

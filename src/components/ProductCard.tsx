@@ -32,7 +32,7 @@ export default function ProductCard({ product, reveal = true }: { product: Produ
             sizes="(max-width: 720px) 46vw, (max-width: 1000px) 30vw, 23vw"
           />
         </Link>
-        {!available ? <span className="product-badge sold">Vendido</span> : product.lastUnits ? <span className="product-badge">Último par</span> : null}
+        {product.soldOut ? <span className="product-badge sold">Vendido</span> : product.reserved ? <span className="product-badge sold">Reservado</span> : product.lastUnits ? <span className="product-badge">Último par</span> : null}
         <button
           type="button"
           onClick={() => toggle(product.slug)}

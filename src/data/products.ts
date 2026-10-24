@@ -15,6 +15,7 @@ export type Product = {
   featured?: boolean; // aparece na seção "Destaques" da home
   lastUnits?: boolean; // mostra o selo "Últimas unidades" no card
   soldOut?: boolean; // true = par já vendido: fica no site com o selo "Vendido" e sem botão de compra
+  reserved?: boolean; // preenchido pelo painel (estoque no Supabase): par reservado para uma cliente
 };
 
 /*
@@ -902,16 +903,17 @@ export const products: Product[] = [
   },
 ];
 
-export function getProduct(slug: string): Product | undefined {
-  return products.find((p) => p.slug === slug);
+// As funções abaixo recebem a lista opcional "lista": as páginas passam o catálogo já com o estoque do painel.
+export function getProduct(slug: string, lista: Product[] = products): Product | undefined {
+  return lista.find((p) => p.slug === slug);
 }
 
 export function isAvailable(p: Product): boolean {
-  return !p.soldOut;
+  return !p.soldOut && !p.reserved;
 }
 
-export function getProductsByCategory(category?: Category): Product[] {
-  const list = category ? products.filter((p) => p.category === category) : products;
+export function getProductsByCategory(category?: Category, lista: Product[] = products): Product[] {
+  const list = category ? lista.filter((p) => p.category === category) : lista;
   // pares vendidos vão para o fim da lista (a ordem entre os demais não muda)
   return [...list].sort((a, b) => Number(!isAvailable(a)) - Number(!isAvailable(b)));
 }
@@ -921,8 +923,8 @@ export function getActiveCategories(): { key: Category; label: string }[] {
   return categories.filter((c) => products.some((p) => p.category === c.key));
 }
 
-export function getFeatured(): Product[] {
-  return products.filter((p) => p.featured && isAvailable(p));
+export function getFeatured(lista: Product[] = products): Product[] {
+  return lista.filter((p) => p.featured && isAvailable(p));
 }
 
 export const formatPrice = (value: number | null) =>

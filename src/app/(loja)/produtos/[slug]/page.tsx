@@ -6,6 +6,7 @@ import ProductCard from "@/components/ProductCard";
 import ProductGallery from "@/components/ProductGallery";
 import ShareProduct from "@/components/ShareProduct";
 import { formatPrice, getProduct, getProductsByCategory, isAvailable, products } from "@/data/products";
+import { getCatalogo } from "@/lib/estoque";
 import { WHATSAPP_EXIBIDO, linkWhatsApp } from "@/lib/site";
 
 export function generateStaticParams() {
@@ -27,10 +28,11 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 export default async function ProductPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const product = getProduct(slug);
+  const catalogo = await getCatalogo();
+  const product = getProduct(slug, catalogo);
   if (!product) notFound();
 
-  const related = getProductsByCategory(product.category)
+  const related = getProductsByCategory(product.category, catalogo)
     .filter((item) => item.slug !== product.slug && isAvailable(item))
     .slice(0, 4);
   const whatsAppLink = linkWhatsApp(`Olá! Vim pelo site e quero saber se ainda está disponível o par ${product.name} (${product.code}), tamanho 35.`);

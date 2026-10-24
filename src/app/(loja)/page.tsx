@@ -5,22 +5,25 @@ import CategoryShowcase, { type ShowcaseItem } from "@/components/home/CategoryS
 import HeroCampaign from "@/components/home/HeroCampaign";
 import ProductRail from "@/components/home/ProductRail";
 import StoryParallax from "@/components/home/StoryParallax";
-import { getFeatured, getProductsByCategory, isAvailable } from "@/data/products";
+import { getFeatured, getProductsByCategory, isAvailable, type Product } from "@/data/products";
+import { getCatalogo } from "@/lib/estoque";
 
-const countAvailable = (category: "sandalias" | "tenis" | "sapatos") =>
-  getProductsByCategory(category).filter(isAvailable).length;
+const countAvailable = (catalogo: Product[], category: "sandalias" | "tenis" | "sapatos") =>
+  getProductsByCategory(category, catalogo).filter(isAvailable).length;
 
-const showcase: ShowcaseItem[] = [
-  { key: "sandalias", label: "Sandálias", href: "/produtos?categoria=sandalias", image: "/campanha/sandalias.jpg", alt: "Sandália dourada de tiras finas em um terraço ensolarado", caption: "Rasteiras, saltos e flatforms para o verão inteiro.", count: countAvailable("sandalias") },
-  { key: "tenis", label: "Tênis", href: "/produtos?categoria=tenis", image: "/campanha/tenis.jpg", alt: "Tênis bege matelassê atravessando a faixa de pedestres", caption: "Conforto de todo dia, sem abrir mão do estilo.", count: countAvailable("tenis") },
-  { key: "sapatos", label: "Sapatos", href: "/produtos?categoria=sapatos", image: "/campanha/sapatos.jpg", alt: "Slingback prata com biqueira dourada sobre pedestal e fundo vermelho", caption: "Scarpins, mules e mocassins para ocasiões que pedem mais.", count: countAvailable("sapatos") },
+const showcaseBase: Omit<ShowcaseItem, "count">[] = [
+  { key: "sandalias", label: "Sandálias", href: "/produtos?categoria=sandalias", image: "/campanha/sandalias.jpg", alt: "Sandália dourada de tiras finas em um terraço ensolarado", caption: "Rasteiras, saltos e flatforms para o verão inteiro." },
+  { key: "tenis", label: "Tênis", href: "/produtos?categoria=tenis", image: "/campanha/tenis.jpg", alt: "Tênis bege matelassê atravessando a faixa de pedestres", caption: "Conforto de todo dia, sem abrir mão do estilo." },
+  { key: "sapatos", label: "Sapatos", href: "/produtos?categoria=sapatos", image: "/campanha/sapatos.jpg", alt: "Slingback prata com biqueira dourada sobre pedestal e fundo vermelho", caption: "Scarpins, mules e mocassins para ocasiões que pedem mais." },
 ];
 
 const ticker = ["Tamanho 35", "Peças únicas", "Novos e originais", "Enviamos para todo o Brasil", "Atendimento pelo WhatsApp", "Mississipi · Pink Cats · Campesí"];
 
-const featured = getFeatured().slice(0, 10);
+export default async function Home() {
+  const catalogo = await getCatalogo();
+  const featured = getFeatured(catalogo).slice(0, 10);
+  const showcase: ShowcaseItem[] = showcaseBase.map((item) => ({ ...item, count: countAvailable(catalogo, item.key as "sandalias" | "tenis" | "sapatos") }));
 
-export default function Home() {
   return (
     <>
       <HeroCampaign />
