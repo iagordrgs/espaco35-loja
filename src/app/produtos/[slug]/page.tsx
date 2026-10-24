@@ -4,131 +4,83 @@ import type { Metadata } from "next";
 import AddToCart from "@/components/AddToCart";
 import ProductCard from "@/components/ProductCard";
 import ProductGallery from "@/components/ProductGallery";
-import {
-  formatPrice,
-  getProduct,
-  getProductsByCategory,
-  isAvailable,
-  products,
-} from "@/data/products";
-import { linkWhatsApp } from "@/lib/site";
+import ShareProduct from "@/components/ShareProduct";
+import { formatPrice, getProduct, getProductsByCategory, isAvailable, products } from "@/data/products";
+import { WHATSAPP_EXIBIDO, linkWhatsApp } from "@/lib/site";
 
 export function generateStaticParams() {
-  return products.map((p) => ({ slug: p.slug }));
+  return products.map((product) => ({ slug: product.slug }));
 }
 
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ slug: string }>;
-}): Promise<Metadata> {
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
   const product = getProduct(slug);
   if (!product) return {};
   const title = `${product.name} · ${product.brand} · tam. 35`;
-  const description = `${product.description} ${formatPrice(
-    product.price
-  )} — par único, novo e com caixa. Cód. ${product.code}.`;
+  const description = `${product.description} ${formatPrice(product.price)} — par único, novo e com caixa. Cód. ${product.code}.`;
   return {
     title,
     description,
-    openGraph: {
-      title,
-      description,
-      images: product.images.map((img) => ({ url: img })),
-    },
+    openGraph: { title, description, images: product.images.map((image) => ({ url: image })) },
   };
 }
 
-export default async function ProductPage({
-  params,
-}: {
-  params: Promise<{ slug: string }>;
-}) {
+export default async function ProductPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const product = getProduct(slug);
   if (!product) notFound();
 
   const related = getProductsByCategory(product.category)
-    .filter((p) => p.slug !== product.slug)
+    .filter((item) => item.slug !== product.slug && isAvailable(item))
     .slice(0, 4);
+  const whatsAppLink = linkWhatsApp(`Olá! Vim pelo site e quero saber se ainda está disponível o par ${product.name} (${product.code}), tamanho 35.`);
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-10">
-      <nav className="mb-6 text-sm text-muted">
-        <Link href="/" className="hover:text-brand">
-          Início
-        </Link>
-        {" / "}
-        <Link href="/produtos" className="hover:text-brand">
-          Produtos
-        </Link>
-        {" / "}
-        <span className="text-foreground">{product.name}</span>
+    <main className="detail-shell">
+      <nav className="breadcrumb" aria-label="Você está em">
+        <Link href="/">Início</Link> <span aria-hidden="true">/</span> <Link href="/produtos">Coleção</Link> <span aria-hidden="true">/</span> <span>{product.name}</span>
       </nav>
-
-      <div className="grid gap-10 lg:grid-cols-2">
+      <div className="detail-grid">
         <ProductGallery images={product.images} alt={product.name} />
+        <div className="detail-info">
+          <div className="detail-brandline"><span>{product.brand}</span><span className="detail-code">Cód. {product.code}</span></div>
+          <h1 className="detail-title">{product.name}</h1>
+          <div className="detail-rating"><span className="rating-stars" aria-hidden="true">E35</span> Novo · original · com caixa</div>
+          <div className="detail-price">
+            {product.compareAtPrice != null && <s>{formatPrice(product.compareAtPrice)}</s>}
+            <strong>{formatPrice(product.price)}</strong>
+          </div>
+          <p className="detail-description">{product.description}</p>
 
-        <div>
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-xs uppercase tracking-[0.15em] text-brand">
-              {product.brand}
-            </span>
-            <span className="text-xs text-muted">Cód. {product.code}</span>
-          </div>
-          <h1 className="mt-1 text-3xl font-bold">{product.name}</h1>
-          <div className="mt-3 flex items-baseline gap-3">
-            {product.compareAtPrice != null && (
-              <s className="text-lg text-muted">
-                {formatPrice(product.compareAtPrice)}
-              </s>
-            )}
-            <p className="text-3xl font-bold text-brand">
-              {formatPrice(product.price)}
-            </p>
-          </div>
-          <p className="mt-4 text-foreground/80">{product.description}</p>
+          <ShareProduct productName={product.name} />
 
           <AddToCart product={product} />
 
           {isAvailable(product) && (
-            <a
-              href={linkWhatsApp(
-                `Oi! 💛 Tenho interesse no(a) ${product.brand} ${product.name} (Cód. ${product.code}, tam. 35) que vi no site. Ainda está disponível?`
-              )}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-4 inline-block w-full rounded-full border-2 border-brand px-8 py-3 text-center font-semibold text-brand transition hover:bg-brand hover:text-background sm:w-auto"
-            >
-              Comprar direto no WhatsApp
+            <a href={whatsAppLink} target="_blank" rel="noopener noreferrer" className="button button-outline" style={{ width: "100%", marginTop: 9 }}>
+              Consultar disponibilidade no WhatsApp <span>↗</span>
             </a>
           )}
-          <p className="mt-3 text-xs text-muted">
-            Par único no tamanho 35 — novo, original e com caixa.
-          </p>
-          <p className="mt-1 text-xs text-muted">
-            Você tem 7 dias para desistir da compra.{" "}
-            <Link
-              href="/trocas-e-devolucoes"
-              className="font-medium text-brand hover:underline"
-            >
-              Trocas e devoluções
-            </Link>
+          <div className="detail-assurances">
+            <span><b>✓</b> Par único disponível no tamanho 35</span>
+            <span><b>✓</b> Pagamento e envio combinados no atendimento</span>
+            <span><b>✓</b> Atendimento em Fortaleza e envio para todo o Brasil</span>
+          </div>
+          <p className="detail-policy">
+            O frete é combinado pelo WhatsApp. Você pode desistir da compra em até 7 dias após receber o pedido. <Link href="/trocas-e-devolucoes">Saiba mais</Link> · dúvidas? {WHATSAPP_EXIBIDO}.
           </p>
         </div>
       </div>
 
       {related.length > 0 && (
-        <section className="mt-16">
-          <h2 className="mb-6 text-2xl font-bold">Você também pode gostar</h2>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-            {related.map((p) => (
-              <ProductCard key={p.slug} product={p} />
-            ))}
+        <section className="related-products">
+          <div className="section-heading">
+            <div><span className="eyebrow">Mais da coleção</span><h2>Outros pares para conhecer.</h2></div>
+            <Link className="section-link" href="/produtos">Ver coleção <span>↗</span></Link>
           </div>
+          <div className="products-grid">{related.map((item) => <ProductCard key={item.slug} product={item} />)}</div>
         </section>
       )}
-    </div>
+    </main>
   );
 }

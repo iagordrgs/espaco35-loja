@@ -1,80 +1,47 @@
 import Link from "next/link";
-import { HORARIO, INSTAGRAM, VENDEDOR, linkWhatsApp } from "@/lib/site";
+import { HORARIO, INSTAGRAM, VENDEDOR, WHATSAPP, WHATSAPP_EXIBIDO, linkWhatsApp } from "@/lib/site";
 
-const WA = linkWhatsApp();
+const WA = linkWhatsApp("Olá! Vim pelo site da Espaço 35 e quero conhecer a coleção.");
 const IG = `https://instagram.com/${INSTAGRAM}`;
 
 export default function Footer() {
   return (
-    <footer className="bg-foreground text-[#E9E3DB]">
-      <div className="mx-auto max-w-6xl px-6 py-16">
-        <div className="grid gap-10 sm:grid-cols-2 md:grid-cols-4">
-          <div>
-            <span className="font-serif text-xl tracking-[0.18em] text-white">
-              ESPAÇO 35
-            </span>
-            <p className="mt-4 text-[13.5px] leading-7 text-[#C9C0B5]">
-              Loja de calçados femininos, só tamanho 35. Modelos novos e
-              originais, com caixa — Mississipi, Pink Cats e Campesí.
-            </p>
-          </div>
-
-          <div>
-            <h4 className="font-serif text-lg text-white">Categorias</h4>
-            <ul className="mt-4 space-y-2 text-[13.5px] text-[#C9C0B5]">
-              <li><Link href="/produtos?categoria=sandalias" className="hover:text-brand">Sandálias</Link></li>
-              <li><Link href="/produtos?categoria=tenis" className="hover:text-brand">Tênis</Link></li>
-              <li><Link href="/produtos?categoria=sapatos" className="hover:text-brand">Sapatos</Link></li>
-              <li><Link href="/produtos" className="hover:text-brand">Toda a coleção</Link></li>
-            </ul>
-          </div>
-
-          <div>
-            <h4 className="font-serif text-lg text-white">Contato</h4>
-            <ul className="mt-4 space-y-2 text-[13.5px] text-[#C9C0B5]">
-              <li>Fortaleza – CE</li>
-              <li><a href={IG} target="_blank" rel="noopener noreferrer" className="hover:text-brand">@{INSTAGRAM}</a></li>
-              <li>{HORARIO}</li>
-            </ul>
-          </div>
-
-          <div>
-            <h4 className="font-serif text-lg text-white">Fale com a gente</h4>
-            <p className="mt-4 text-[13.5px] leading-7 text-[#C9C0B5]">
-              Tire dúvidas e garanta seu par direto pelo WhatsApp.
-            </p>
-            <a
-              href={WA}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-4 inline-block rounded-full bg-brand px-6 py-3 text-[13px] font-semibold text-white transition hover:bg-brand-dark"
-            >
-              Chamar no WhatsApp
-            </a>
-          </div>
+    <footer className="site-footer">
+      <div className="footer-main">
+        <div className="footer-brand">
+          <Link href="/" className="footer-wordmark">ESPAÇO <span>35</span></Link>
+          <p>Calçados femininos para quem sempre calça 35. Uma curadoria de pares novos, originais e com caixa.</p>
         </div>
-
-        <div className="mt-14 border-t border-[var(--line)] pt-6 text-center text-[12px] leading-6 tracking-wide text-[#9a9087]">
-          <p>
-            <Link
-              href="/trocas-e-devolucoes"
-              className="underline underline-offset-4 hover:text-brand"
-            >
-              Trocas e devoluções
-            </Link>
-          </p>
-          {VENDEDOR.nomeEmpresarial && VENDEDOR.documento ? (
-            <p className="mt-2">
-              {VENDEDOR.nomeEmpresarial} · {VENDEDOR.documento}
-              {VENDEDOR.endereco ? ` · ${VENDEDOR.endereco}` : ""}
-              {VENDEDOR.email ? ` · ${VENDEDOR.email}` : ""}
-            </p>
-          ) : null}
-          <p className="mt-2">
-            © {new Date().getFullYear()} Espaço 35 · Pares originais, novos e
-            com caixa · Sujeito a disponibilidade
-          </p>
+        <div className="footer-column">
+          <h2>Explore</h2>
+          <Link href="/produtos">Toda a coleção</Link>
+          <Link href="/produtos?categoria=sandalias">Sandálias</Link>
+          <Link href="/produtos?categoria=tenis">Tênis</Link>
+          <Link href="/produtos?categoria=sapatos">Sapatos</Link>
+          <Link href="/favoritos">Seus favoritos</Link>
         </div>
+        <div className="footer-column">
+          <h2>Atendimento</h2>
+          <span>Fortaleza · Ceará</span>
+          <span>{HORARIO}</span>
+          <a href={`tel:+${WHATSAPP}`}>{WHATSAPP_EXIBIDO}</a>
+          <a href={IG} target="_blank" rel="noopener noreferrer">Instagram ↗</a>
+        </div>
+        <div className="footer-contact">
+          <span className="eyebrow eyebrow-light">Fale com a gente</span>
+          <p>Escolheu seu par? A gente combina pagamento e envio com você, direto pelo WhatsApp.</p>
+          <a href={WA} target="_blank" rel="noopener noreferrer" className="button button-light">Chamar no WhatsApp <span>↗</span></a>
+        </div>
+      </div>
+      <div className="footer-bottom">
+        <div className="footer-legal">
+          <Link href="/trocas-e-devolucoes">Trocas e devoluções</Link>
+          <span>© {new Date().getFullYear()} Espaço 35</span>
+        </div>
+        {VENDEDOR.nomeEmpresarial && VENDEDOR.documento ? (
+          <p>{VENDEDOR.nomeEmpresarial} · {VENDEDOR.documento}{VENDEDOR.endereco ? ` · ${VENDEDOR.endereco}` : ""}{VENDEDOR.email ? ` · ${VENDEDOR.email}` : ""}</p>
+        ) : null}
+        <span className="footer-note">Par único · tamanho 35 · sujeito à disponibilidade</span>
       </div>
     </footer>
   );

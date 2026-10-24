@@ -5,93 +5,65 @@ import Link from "next/link";
 import { useState } from "react";
 import { formatPrice, isAvailable, type Product } from "@/data/products";
 import { useCart } from "@/context/CartContext";
+import { useFavorites } from "@/context/FavoritesContext";
+import Reveal from "@/components/Reveal";
 
 export default function ProductCard({ product }: { product: Product }) {
-  const { add, has } = useCart();
-  const [fav, setFav] = useState(false);
-  const vendido = !isAvailable(product);
-  const noCarrinho = has(product.slug);
+  const { add, has: inCart } = useCart();
+  const { has: isFavorite, toggle } = useFavorites();
+  const [notice, setNotice] = useState("");
+  const available = isAvailable(product);
+  const saved = isFavorite(product.slug);
+  const added = inCart(product.slug);
 
-  function adicionar(e: React.MouseEvent) {
-    e.preventDefault();
-    e.stopPropagation();
+  function addProduct() {
     add(product.slug);
+    setNotice("Par adicionado à sacola.");
   }
 
   return (
-    <Link
-      href={`/produtos/${product.slug}`}
-      className="group flex flex-col overflow-hidden rounded-2xl border border-[var(--line)] bg-card transition duration-300 hover:-translate-y-1 hover:shadow-[0_22px_40px_-26px_rgba(47,41,37,0.35)]"
-    >
-      <div className="relative aspect-square overflow-hidden bg-white">
-        <Image
-          src={product.images[0]}
-          alt={product.name}
-          fill
-          sizes="(max-width: 768px) 50vw, 25vw"
-          className={`object-contain p-3 transition duration-700 group-hover:scale-105 ${
-            vendido ? "opacity-50" : ""
-          }`}
-        />
-        {vendido ? (
-          <span className="absolute left-3 top-3 rounded-full bg-foreground px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-background">
-            Vendido
-          </span>
-        ) : product.lastUnits ? (
-          <span className="absolute left-3 top-3 rounded-full border border-[var(--line)] bg-card px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-brand">
-            Últimas unidades
-          </span>
-        ) : null}
-        {product.images.length > 1 ? (
-          <span className="absolute bottom-3 right-3 rounded-full border border-[var(--line)] bg-card/90 px-2.5 py-1 text-[10px] font-medium text-muted">
-            {product.images.length} fotos
-          </span>
-        ) : null}
+    <Reveal className="product-card">
+      <div className="product-media">
+        <Link href={`/produtos/${product.slug}`} className="product-image-link" aria-label={`Ver ${product.name}`}>
+          <Image
+            src={product.images[0]}
+            alt={product.name}
+            fill
+            sizes="(max-width: 720px) 46vw, (max-width: 1000px) 30vw, 23vw"
+          />
+        </Link>
+        {!available ? <span className="product-badge sold">Vendido</span> : product.lastUnits ? <span className="product-badge">Último par</span> : null}
         <button
           type="button"
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            setFav((f) => !f);
-          }}
-          aria-label="Favoritar"
-          className={`absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-card/85 text-base opacity-0 transition group-hover:opacity-100 ${
-            fav ? "text-brand" : "text-muted"
-          }`}
+          onClick={() => toggle(product.slug)}
+          aria-label={saved ? `Remover ${product.name} dos favoritos` : `Salvar ${product.name} nos favoritos`}
+          aria-pressed={saved}
+          className={`favorite-toggle${saved ? " is-favorite" : ""}`}
         >
-          {fav ? "♥" : "♡"}
+          <HeartIcon filled={saved} />
         </button>
-        {vendido ? null : (
-          <button
-            type="button"
-            onClick={adicionar}
-            className="absolute inset-x-3 bottom-3 translate-y-3 rounded-xl bg-foreground/95 py-2.5 text-center text-[12.5px] font-semibold tracking-wide text-background opacity-0 backdrop-blur transition group-hover:translate-y-0 group-hover:opacity-100"
-          >
-            {noCarrinho ? "✓ No carrinho" : "Adicionar ao carrinho"}
-          </button>
-        )}
       </div>
-      <div className="flex flex-1 flex-col gap-1 p-5">
-        <span className="text-[10.5px] font-semibold uppercase tracking-[0.16em] text-brand">
-          {product.brand}
+      <div className="product-info">
+        <span className="product-brand">{product.brand}</span>
+        <h3 className="product-name"><Link href={`/produtos/${product.slug}`}>{product.name}</Link></h3>
+        <span className="product-detail-line">Par único · tamanho 35</span>
+        <span className="product-price-line">
+          {product.compareAtPrice != null && <s>{formatPrice(product.compareAtPrice)}</s>}
+          <strong className="product-price">{formatPrice(product.price)}</strong>
         </span>
-        <h3 className="font-serif text-[17px] leading-tight text-foreground">
-          {product.name}
-        </h3>
-        <span className="mt-1 text-[11px] tracking-wide text-muted">
-          Tamanho 35 · original e novo
-        </span>
-        <span className="mt-3 flex items-baseline gap-2">
-          {product.compareAtPrice != null ? (
-            <s className="text-[13px] text-muted">
-              {formatPrice(product.compareAtPrice)}
-            </s>
-          ) : null}
-          <span className="font-serif text-lg text-foreground">
-            {formatPrice(product.price)}
-          </span>
-        </span>
+        {available ? (
+          added ? <Link href="/carrinho" className="quick-add">Na sacola · ver pedido <span aria-hidden="true">↗</span></Link> : <button type="button" onClick={addProduct} className="quick-add">Adicionar à sacola</button>
+        ) : <button type="button" className="quick-add" disabled>Par vendido</button>}
+        <span className="screen-reader-only" role="status" aria-live="polite">{notice}</span>
       </div>
-    </Link>
+    </Reveal>
+  );
+}
+
+function HeartIcon({ filled }: { filled: boolean }) {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" fill={filled ? "currentColor" : "none"}>
+      <path d="M20.4 8.8c0 4.4-8.4 10-8.4 10s-8.4-5.6-8.4-10a4.6 4.6 0 0 1 8.4-2.5 4.6 4.6 0 0 1 8.4 2.5Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+    </svg>
   );
 }

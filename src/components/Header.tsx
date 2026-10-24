@@ -1,56 +1,98 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useCart } from "@/context/CartContext";
+import { useFavorites } from "@/context/FavoritesContext";
 import { getActiveCategories } from "@/data/products";
 
-// só as categorias que têm par (hoje não há botas)
 const categories = getActiveCategories();
 
 export default function Header() {
   const { totalItems } = useCart();
+  const { count: favoritesCount } = useFavorites();
   const [open, setOpen] = useState(false);
 
+  useEffect(() => {
+    if (!open) return;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [open]);
+
   return (
-    <header className="sticky top-0 z-50 bg-brand text-white shadow-[0_2px_12px_-4px_rgba(0,0,0,0.3)]">
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 h-[74px]">
-        <Link href="/" className="font-serif text-xl tracking-[0.22em] text-white">
-          ESPAÇO <span className="font-extrabold">35</span>
-        </Link>
-        <nav className="hidden items-center gap-8 text-[13.5px] tracking-wide text-white/85 md:flex">
-          <Link href="/produtos" className="transition hover:text-white">Coleção</Link>
-          {categories.map((c) => (
-            <Link key={c.key} href={`/produtos?categoria=${c.key}`} className="transition hover:text-white">
-              {c.label}
-            </Link>
-          ))}
-        </nav>
-        <div className="flex items-center gap-3">
-          <Link
-            href="/carrinho"
-            className="relative inline-flex items-center gap-2 rounded-full border border-white/50 px-4 py-2 text-[13px] tracking-wide text-white transition hover:bg-white hover:text-brand"
-          >
-            Carrinho
-            {totalItems > 0 && (
-              <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-white px-1 text-xs font-bold text-brand">
-                {totalItems}
-              </span>
-            )}
-          </Link>
-          <button type="button" onClick={() => setOpen((o) => !o)} aria-label="Menu" className="text-2xl text-white md:hidden">
-            ☰
-          </button>
-        </div>
+    <>
+      <div className="announcement-bar">
+        <span>Uma seleção especial, sempre no 35.</span>
+        <Link href="/produtos">Descubra a coleção <span aria-hidden="true">↗</span></Link>
       </div>
-      {open && (
-        <nav className="flex flex-col gap-4 border-t border-white/20 bg-brand px-6 py-5 text-sm text-white md:hidden">
-          <Link href="/produtos" onClick={() => setOpen(false)}>Coleção</Link>
-          {categories.map((c) => (
-            <Link key={c.key} href={`/produtos?categoria=${c.key}`} onClick={() => setOpen(false)}>{c.label}</Link>
-          ))}
+      <header className="site-header">
+        <div className="header-inner">
+          <Link href="/" className="brand-lockup" aria-label="Espaço 35 — início">
+            <span className="brand-mark">35</span>
+            <span className="brand-name">ESPAÇO<span>CALÇADOS FEMININOS</span></span>
+          </Link>
+
+          <nav className="desktop-nav" aria-label="Navegação principal">
+            <Link href="/produtos">Novidades</Link>
+            {categories.map((category) => (
+              <Link key={category.key} href={`/produtos?categoria=${category.key}`}>
+                {category.label}
+              </Link>
+            ))}
+          </nav>
+
+          <div className="header-actions">
+            <Link href="/produtos#busca" className="header-icon-link search-link" aria-label="Buscar produtos">
+              <SearchIcon />
+            </Link>
+            <Link href="/favoritos" className="header-icon-link" aria-label={`Favoritos${favoritesCount ? `, ${favoritesCount} salvos` : ""}`}>
+              <HeartIcon />
+              {favoritesCount > 0 && <span className="header-count">{favoritesCount}</span>}
+            </Link>
+            <Link href="/carrinho" className="header-icon-link cart-link" aria-label={`Sacola${totalItems ? `, ${totalItems} pares` : ""}`}>
+              <BagIcon />
+              <span className="cart-label">Sacola</span>
+              <span className="header-count">{totalItems}</span>
+            </Link>
+            <button
+              type="button"
+              className="menu-toggle"
+              onClick={() => setOpen((current) => !current)}
+              aria-label={open ? "Fechar menu" : "Abrir menu"}
+              aria-expanded={open}
+              aria-controls="mobile-navigation"
+            >
+              <span />
+              <span />
+            </button>
+          </div>
+        </div>
+        <nav id="mobile-navigation" className="mobile-nav" aria-label="Navegação móvel" hidden={!open}>
+            <Link href="/produtos" onClick={() => setOpen(false)}>Novidades e coleção <span>↗</span></Link>
+            {categories.map((category) => (
+              <Link key={category.key} href={`/produtos?categoria=${category.key}`} onClick={() => setOpen(false)}>
+                {category.label}<span>↗</span>
+              </Link>
+            ))}
+            <Link href="/produtos#busca" onClick={() => setOpen(false)}>Buscar produtos<span><SearchIcon /></span></Link>
+            <Link href="/favoritos" onClick={() => setOpen(false)}>Meus favoritos<span>♡</span></Link>
         </nav>
-      )}
-    </header>
+      </header>
+    </>
   );
+}
+
+function SearchIcon() {
+  return <svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><circle cx="10.8" cy="10.8" r="6.5" stroke="currentColor" strokeWidth="1.7"/><path d="m16 16 4.2 4.2" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"/></svg>;
+}
+
+function HeartIcon() {
+  return <svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><path d="M20.4 8.8c0 4.4-8.4 10-8.4 10s-8.4-5.6-8.4-10a4.6 4.6 0 0 1 8.4-2.5 4.6 4.6 0 0 1 8.4 2.5Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round"/></svg>;
+}
+
+function BagIcon() {
+  return <svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><path d="M5.2 8.5h13.6l1 11H4.2l1-11Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round"/><path d="M8.5 8.5V6.8a3.5 3.5 0 0 1 7 0v1.7" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg>;
 }

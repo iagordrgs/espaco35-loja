@@ -7,149 +7,74 @@ import { useCart } from "@/context/CartContext";
 import { formatPrice, type Product } from "@/data/products";
 import { WHATSAPP_EXIBIDO, linkWhatsApp } from "@/lib/site";
 
-function montarMensagem(products: Product[], total: number): string {
-  const linhas = products.map(
-    (p) =>
-      `• ${p.name} (Cód. ${p.code}, tam. ${p.sizes[0]}) — ${formatPrice(p.price)}`
-  );
-  return [
-    "Oi! 💛 Quero fechar meu pedido do site:",
-    ...linhas,
-    `Total: ${formatPrice(total)}`,
-    "Como faço o pagamento e o envio?",
-  ].join("\n");
+function buildMessage(products: Product[], total: number): string {
+  const lines = products.map((product) => `• ${product.name} (cód. ${product.code}, tam. ${product.sizes[0]}) — ${formatPrice(product.price)}`);
+  return ["Olá! Vim pelo site Espaço 35 e quero fazer este pedido:", ...lines, `Subtotal: ${formatPrice(total)}`, "Como combinamos frete e pagamento?"].join("\n");
 }
 
 export default function CheckoutPage() {
   const { hydrated, products, unavailable, totalPrice, clear } = useCart();
-  const [abriu, setAbriu] = useState(false); // clicou no botão: o WhatsApp foi aberto com o pedido
-  const [enviado, setEnviado] = useState(false); // a cliente confirmou que mandou a mensagem
+  const [openedWhatsApp, setOpenedWhatsApp] = useState(false);
+  const [confirmed, setConfirmed] = useState(false);
 
-  // Antes de ler o carrinho do celular não dá para dizer que ele está vazio.
-  if (!hydrated) return <div className="min-h-[50vh]" aria-busy="true" />;
+  if (!hydrated) return <main className="page-center" aria-busy="true" />;
 
-  if (enviado) {
+  if (confirmed) {
     return (
-      <div className="mx-auto max-w-xl px-4 py-20 text-center">
-        <div className="text-5xl">💬</div>
-        <h1 className="mt-4 text-2xl font-bold">Pedido enviado! 💛</h1>
-        <p className="mt-2 text-muted">
-          A gente responde rapidinho — Seg a Sáb, 9h às 18h. Qualquer coisa,
-          chama no {WHATSAPP_EXIBIDO}.
-        </p>
-        <Link
-          href="/produtos"
-          className="mt-6 inline-block rounded-full bg-brand px-6 py-3 font-semibold text-background transition hover:bg-accent"
-        >
-          Voltar à loja
-        </Link>
-      </div>
+      <main className="page-center">
+        <span className="empty-mark" aria-hidden="true">✓</span>
+        <h1>Pedido encaminhado.</h1>
+        <p>Obrigada por escolher a Espaço 35. A loja responde pelo WhatsApp {WHATSAPP_EXIBIDO}, de segunda a sábado, das 9h às 18h.</p>
+        <Link href="/produtos" className="button button-dark">Voltar à loja <span>↗</span></Link>
+      </main>
     );
   }
 
   if (products.length === 0) {
     return (
-      <div className="mx-auto max-w-xl px-4 py-20 text-center">
-        {unavailable.length > 0 ? (
-          <div className="mb-8 text-left">
-            <AvisoIndisponiveis />
-          </div>
-        ) : null}
-        <h1 className="text-2xl font-bold">Nada para finalizar</h1>
-        <p className="mt-2 text-muted">Seu carrinho está vazio.</p>
-        <Link
-          href="/produtos"
-          className="mt-6 inline-block rounded-full bg-brand px-6 py-3 font-semibold text-background transition hover:bg-accent"
-        >
-          Ver produtos
-        </Link>
-      </div>
+      <main className="page-center">
+        {unavailable.length > 0 && <div className="mb-8 text-left"><AvisoIndisponiveis /></div>}
+        <span className="empty-mark" aria-hidden="true">35</span>
+        <h1>Não há pares para finalizar.</h1>
+        <p>Seu pedido fica pronto depois que você escolher um par da coleção.</p>
+        <Link href="/produtos" className="button button-dark">Ver coleção <span>↗</span></Link>
+      </main>
     );
   }
 
-  const url = linkWhatsApp(montarMensagem(products, totalPrice));
+  const messageLink = linkWhatsApp(buildMessage(products, totalPrice));
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-10">
-      <h1 className="text-3xl font-bold">Fechar pedido</h1>
-      <p className="mt-2 text-muted">
-        A compra é finalizada no nosso WhatsApp: você envia o pedido pronto e a
-        gente combina pagamento e envio com você. Rapidinho e sem cadastro.
-      </p>
-      <p className="mt-2 text-sm text-muted">
-        Você tem 7 dias para desistir da compra.{" "}
-        <Link
-          href="/trocas-e-devolucoes"
-          className="font-medium text-brand hover:underline"
-        >
-          Trocas e devoluções
-        </Link>
-      </p>
-
-      {unavailable.length > 0 ? (
-        <div className="mt-6">
-          <AvisoIndisponiveis />
-        </div>
-      ) : null}
-
-      <aside className="mt-8 rounded-xl border border-[var(--line)] bg-card p-6">
-        <h2 className="text-lg font-bold">Seu pedido</h2>
-        <ul className="mt-4 space-y-3 text-sm">
-          {products.map((p) => (
-            <li key={p.slug} className="flex justify-between gap-2">
-              <span className="text-muted">
-                {p.name} · Cód. {p.code} · tam. {p.sizes[0]}
-              </span>
-              <span>{formatPrice(p.price)}</span>
+    <main className="cart-shell">
+      <div className="checkout-intro">
+        <p className="page-kicker">Finalização assistida</p>
+        <h1>Seu pedido, quase lá.</h1>
+        <p>Vamos abrir uma conversa com a loja e preencher uma mensagem com os pares escolhidos. Você só conclui o pedido quando tocar em enviar no WhatsApp.</p>
+      </div>
+      {unavailable.length > 0 && <div style={{ marginTop: 18 }}><AvisoIndisponiveis /></div>}
+      <section className="checkout-card">
+        <h2>Confira seu pedido</h2>
+        <ul className="checkout-items">
+          {products.map((product) => (
+            <li key={product.slug} className="checkout-item">
+              <span>{product.name} · {product.code} · tamanho {product.sizes[0]}</span>
+              <strong>{formatPrice(product.price)}</strong>
             </li>
           ))}
         </ul>
-        <div className="mt-4 space-y-2 border-t border-[var(--line)] pt-4 text-sm">
-          <div className="flex justify-between">
-            <span className="text-muted">Frete</span>
-            <span className="text-foreground/70">A combinar no WhatsApp</span>
+        <div className="summary-line" style={{ marginTop: 20, paddingTop: 15, borderTop: "1px solid #deddda" }}><span>Frete</span><span>A combinar</span></div>
+        <div className="summary-total"><span>Subtotal dos pares</span><strong>{formatPrice(totalPrice)}</strong></div>
+        <a href={messageLink} target="_blank" rel="noopener noreferrer" onClick={() => setOpenedWhatsApp(true)} className="button button-red">Abrir conversa no WhatsApp <span>↗</span></a>
+        <p className="checkout-hint">O frete e o pagamento são combinados com a loja. Nada é cobrado por este site.</p>
+        {openedWhatsApp && (
+          <div className="checkout-confirmation" role="status">
+            <strong>O WhatsApp foi aberto com sua mensagem pronta.</strong>
+            <p>Confira o pedido na conversa e toque em enviar. O pedido ainda não foi enviado até você fazer isso.</p>
+            <button type="button" onClick={() => { clear(); setConfirmed(true); }} className="text-button">Já enviei a mensagem</button>
           </div>
-          <div className="flex justify-between text-lg font-bold">
-            <span>Total</span>
-            <span className="text-brand">{formatPrice(totalPrice)}</span>
-          </div>
-        </div>
-
-        {/* Link normal (não window.open): é o jeito que menos esbarra em bloqueio de pop-up no navegador do Instagram e no iPhone. */}
-        <a
-          href={url}
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={() => setAbriu(true)}
-          className="mt-6 block w-full rounded-full bg-brand px-6 py-3 text-center font-semibold text-background transition hover:bg-accent"
-        >
-          Fechar pedido no WhatsApp
-        </a>
-        <p className="mt-3 text-center text-xs text-muted">
-          Abre uma conversa no WhatsApp {WHATSAPP_EXIBIDO} com o pedido já
-          escrito. Nada é cobrado pelo site.
-        </p>
-
-        {abriu ? (
-          <div className="mt-5 rounded-xl bg-nude p-4 text-sm">
-            <p className="font-semibold">Abrimos o WhatsApp com o seu pedido.</p>
-            <p className="mt-1 text-muted">
-              Falta só tocar em <b>enviar</b> na conversa. Se ela não abriu,
-              toque no botão de novo ou chame no {WHATSAPP_EXIBIDO}.
-            </p>
-            <button
-              type="button"
-              onClick={() => {
-                clear();
-                setEnviado(true);
-              }}
-              className="mt-3 font-semibold text-brand hover:underline"
-            >
-              Já enviei — limpar meu carrinho
-            </button>
-          </div>
-        ) : null}
-      </aside>
-    </div>
+        )}
+      </section>
+      <Link href="/carrinho" className="continue-link">Voltar à sacola</Link>
+    </main>
   );
 }

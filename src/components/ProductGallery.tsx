@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import Image from "next/image";
 
 export default function ProductGallery({
@@ -12,6 +12,10 @@ export default function ProductGallery({
 }) {
   const [i, setI] = useState(0);
   const [zoom, setZoom] = useState(false);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const hadZoom = useRef(false);
   const n = images.length;
 
   const go = useCallback(
@@ -25,31 +29,56 @@ export default function ProductGallery({
       if (e.key === "Escape") setZoom(false);
       if (e.key === "ArrowRight") go(1);
       if (e.key === "ArrowLeft") go(-1);
+      if (e.key === "Tab" && dialogRef.current) {
+        const items = dialogRef.current.querySelectorAll<HTMLElement>("button:not(:disabled)");
+        const first = items[0];
+        const last = items[items.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last?.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first?.focus();
+        }
+      }
     };
     window.addEventListener("keydown", h);
     return () => window.removeEventListener("keydown", h);
   }, [zoom, go]);
 
+  useEffect(() => {
+    if (zoom) closeRef.current?.focus();
+    else if (hadZoom.current) triggerRef.current?.focus();
+    hadZoom.current = zoom;
+  }, [zoom]);
+
   return (
     <div>
       {/* imagem principal */}
-      <div className="relative aspect-square overflow-hidden rounded-2xl border border-[var(--line)] bg-white">
+      <div className="product-gallery-main">
+        <button
+          type="button"
+          ref={triggerRef}
+          onClick={() => setZoom(true)}
+          aria-label={`Ampliar foto de ${alt}`}
+          className="gallery-main-trigger"
+        >
         <Image
           src={images[i]}
           alt={alt}
           fill
           sizes="(max-width: 1024px) 100vw, 50vw"
-          className="cursor-zoom-in object-contain p-3"
+          className="object-contain p-3"
           priority
-          onClick={() => setZoom(true)}
         />
+        </button>
         {n > 1 && (
           <>
             <button
               type="button"
               onClick={() => go(-1)}
               aria-label="Anterior"
-              className="absolute left-3 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full bg-background/70 text-foreground backdrop-blur transition hover:bg-background"
+              className="gallery-control previous"
             >
               ‹
             </button>
@@ -57,11 +86,11 @@ export default function ProductGallery({
               type="button"
               onClick={() => go(1)}
               aria-label="Próxima"
-              className="absolute right-3 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full bg-background/70 text-foreground backdrop-blur transition hover:bg-background"
+              className="gallery-control next"
             >
               ›
             </button>
-            <span className="absolute bottom-3 right-3 rounded-full bg-background/80 px-2.5 py-1 text-xs font-medium text-foreground/90 backdrop-blur">
+            <span className="gallery-count">
               {i + 1}/{n}
             </span>
           </>
@@ -70,15 +99,15 @@ export default function ProductGallery({
 
       {/* miniaturas */}
       {n > 1 && (
-        <div className="mt-3 flex gap-3">
+        <div className="gallery-thumbnails" aria-label="Mais fotos deste par">
           {images.map((src, idx) => (
             <button
               key={src}
               type="button"
               onClick={() => setI(idx)}
-              className={`relative h-20 w-20 overflow-hidden rounded-lg border bg-white transition ${
-                idx === i ? "border-brand" : "border-[var(--line)] hover:border-brand/50"
-              }`}
+              aria-label={`Ver foto ${idx + 1} de ${n}`}
+              aria-pressed={idx === i}
+              className={`gallery-thumb${idx === i ? " active" : ""}`}
             >
               <Image src={src} alt={`${alt} ${idx + 1}`} fill sizes="80px" className="object-contain p-1" />
             </button>
@@ -89,18 +118,24 @@ export default function ProductGallery({
       {/* lightbox */}
       {zoom && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4"
+          className="lightbox"
+          ref={dialogRef}
+          role="dialog"
+          aria-modal="true"
+          aria-label={`Fotos de ${alt}`}
           onClick={() => setZoom(false)}
         >
           <button
             type="button"
+            ref={closeRef}
             aria-label="Fechar"
-            className="absolute right-5 top-5 text-3xl text-white/80 hover:text-white"
+            className="lightbox-close"
+            onClick={() => setZoom(false)}
           >
             ×
           </button>
           <div
-            className="relative h-[80vh] w-[90vw] max-w-3xl"
+            className="lightbox-image"
             onClick={(e) => e.stopPropagation()}
           >
             <Image src={images[i]} alt={alt} fill sizes="90vw" className="object-contain" />
@@ -110,7 +145,7 @@ export default function ProductGallery({
                   type="button"
                   onClick={() => go(-1)}
                   aria-label="Anterior"
-                  className="absolute left-0 top-1/2 -translate-y-1/2 flex h-12 w-12 items-center justify-center rounded-full bg-white/15 text-2xl text-white backdrop-blur hover:bg-white/25"
+                  className="gallery-control previous"
                 >
                   ‹
                 </button>
@@ -118,11 +153,11 @@ export default function ProductGallery({
                   type="button"
                   onClick={() => go(1)}
                   aria-label="Próxima"
-                  className="absolute right-0 top-1/2 -translate-y-1/2 flex h-12 w-12 items-center justify-center rounded-full bg-white/15 text-2xl text-white backdrop-blur hover:bg-white/25"
+                  className="gallery-control next"
                 >
                   ›
                 </button>
-                <span className="absolute bottom-2 left-1/2 -translate-x-1/2 rounded-full bg-white/15 px-3 py-1 text-sm text-white backdrop-blur">
+                <span className="gallery-count">
                   {i + 1}/{n}
                 </span>
               </>

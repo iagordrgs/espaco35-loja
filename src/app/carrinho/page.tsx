@@ -7,125 +7,56 @@ import { useCart } from "@/context/CartContext";
 import { formatPrice } from "@/data/products";
 
 export default function CarrinhoPage() {
-  const { hydrated, products, unavailable, remove, totalItems, totalPrice } =
-    useCart();
-
-  // Antes de ler o carrinho do celular não dá para dizer que ele está vazio.
-  if (!hydrated) return <div className="min-h-[50vh]" aria-busy="true" />;
+  const { hydrated, products, unavailable, remove, totalItems, totalPrice } = useCart();
+  if (!hydrated) return <main className="empty-cart" aria-busy="true" />;
 
   if (products.length === 0) {
     return (
-      <div className="mx-auto max-w-2xl px-4 py-20 text-center">
-        {unavailable.length > 0 ? (
-          <div className="mb-8 text-left">
-            <AvisoIndisponiveis />
-          </div>
-        ) : null}
-        <h1 className="text-2xl font-bold">Seu carrinho está vazio</h1>
-        <p className="mt-2 text-muted">
-          Que tal dar uma olhada na nossa coleção?
-        </p>
-        <Link
-          href="/produtos"
-          className="mt-6 inline-block rounded-full bg-brand px-6 py-3 font-semibold text-background transition hover:bg-accent"
-        >
-          Ver produtos
-        </Link>
-      </div>
+      <main className="empty-cart">
+        {unavailable.length > 0 && <div className="mb-8 text-left"><AvisoIndisponiveis /></div>}
+        <span className="empty-mark" aria-hidden="true">35</span>
+        <h1>Sua sacola ainda está vazia.</h1>
+        <p>Descubra a curadoria de pares únicos, sempre no tamanho 35.</p>
+        <Link href="/produtos" className="button button-dark">Explorar a coleção <span>↗</span></Link>
+      </main>
     );
   }
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-10">
-      <h1 className="text-3xl font-bold">Carrinho</h1>
-      <p className="mt-1 text-muted">
-        {totalItems} {totalItems === 1 ? "par" : "pares"} · cada modelo é um
-        par único
-      </p>
-
-      {unavailable.length > 0 ? (
-        <div className="mt-6">
-          <AvisoIndisponiveis />
-        </div>
-      ) : null}
-
-      <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_320px]">
-        {/* Pares */}
-        <ul className="space-y-4">
-          {products.map((p) => (
-            <li
-              key={p.slug}
-              className="flex gap-4 rounded-xl border border-[var(--line)] bg-card p-4"
-            >
-              <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-lg bg-white">
-                <Image
-                  src={p.images[0]}
-                  alt={p.name}
-                  fill
-                  sizes="96px"
-                  className="object-contain p-1"
-                />
+    <main className="cart-shell">
+      <div className="cart-heading">
+        <p className="page-kicker">Quase seu</p>
+        <h1 className="page-title">Sua sacola<span style={{ color: "var(--brand)" }}>.</span></h1>
+        <p>{totalItems} {totalItems === 1 ? "par" : "pares"} selecionados · cada modelo é uma unidade única.</p>
+      </div>
+      {unavailable.length > 0 && <div style={{ marginTop: 18 }}><AvisoIndisponiveis /></div>}
+      <div className="cart-grid">
+        <ul className="cart-list">
+          {products.map((product) => (
+            <li key={product.slug} className="cart-item">
+              <Link href={`/produtos/${product.slug}`} className="cart-item-image" aria-label={`Ver ${product.name}`}>
+                <Image src={product.images[0]} alt={product.name} fill sizes="115px" />
+              </Link>
+              <div className="cart-item-info">
+                <span className="product-brand">{product.brand}</span>
+                <h2><Link href={`/produtos/${product.slug}`}>{product.name}</Link></h2>
+                <p>Cód. {product.code} · tamanho {product.sizes.join(", ")} · {product.colors.join(" e ")}</p>
+                <button type="button" onClick={() => remove(product.slug)} className="remove-item">Remover da sacola</button>
               </div>
-              <div className="flex flex-1 flex-col">
-                <div className="flex justify-between gap-2">
-                  <Link
-                    href={`/produtos/${p.slug}`}
-                    className="font-medium hover:text-brand"
-                  >
-                    {p.name}
-                  </Link>
-                  <button
-                    type="button"
-                    onClick={() => remove(p.slug)}
-                    className="text-sm text-muted hover:text-red-600"
-                  >
-                    Remover
-                  </button>
-                </div>
-                <p className="text-sm text-muted">
-                  Cód. {p.code} · Tam. {p.sizes.join(", ")} · {p.colors.join(" e ")}
-                </p>
-                <div className="mt-auto pt-2 text-right">
-                  <span className="font-semibold text-brand">
-                    {formatPrice(p.price)}
-                  </span>
-                </div>
-              </div>
+              <strong className="cart-item-price">{formatPrice(product.price)}</strong>
             </li>
           ))}
         </ul>
-
-        {/* Resumo */}
-        <aside className="h-fit rounded-xl border border-[var(--line)] bg-card p-6">
-          <h2 className="text-lg font-bold">Resumo</h2>
-          <div className="mt-4 space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span className="text-muted">Subtotal</span>
-              <span>{formatPrice(totalPrice)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted">Frete</span>
-              <span className="text-foreground/70">A combinar</span>
-            </div>
-          </div>
-          <div className="mt-4 flex justify-between border-t border-[var(--line)] pt-4 text-lg font-bold">
-            <span>Total</span>
-            <span className="text-brand">{formatPrice(totalPrice)}</span>
-          </div>
-          <Link
-            href="/checkout"
-            className="mt-6 block rounded-full bg-brand px-6 py-3 text-center font-semibold text-background transition hover:bg-accent"
-          >
-            Fechar pedido no WhatsApp
-          </Link>
-          <Link
-            href="/produtos"
-            className="mt-3 block text-center text-sm text-brand hover:underline"
-          >
-            Continuar comprando
-          </Link>
+        <aside className="cart-summary">
+          <h2>Resumo do pedido</h2>
+          <div className="summary-line"><span>Subtotal dos pares</span><span>{formatPrice(totalPrice)}</span></div>
+          <div className="summary-line"><span>Frete</span><span>A combinar</span></div>
+          <div className="summary-total"><span>Total parcial</span><strong>{formatPrice(totalPrice)}</strong></div>
+          <Link href="/checkout" className="button button-red">Continuar pelo WhatsApp <span>↗</span></Link>
+          <p className="summary-note">O frete e o pagamento são combinados diretamente com a loja. Nenhuma cobrança é feita neste site.</p>
+          <Link href="/produtos" className="continue-link">Continuar escolhendo</Link>
         </aside>
       </div>
-    </div>
+    </main>
   );
 }
