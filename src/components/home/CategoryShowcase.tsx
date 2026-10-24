@@ -13,6 +13,7 @@ export type ShowcaseItem = {
   alt: string;
   caption: string;
   count: number;
+  position?: string; // enquadramento da foto quando a tela corta as laterais
 };
 
 export default function CategoryShowcase({ items }: { items: ShowcaseItem[] }) {
@@ -64,7 +65,7 @@ export default function CategoryShowcase({ items }: { items: ShowcaseItem[] }) {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1] }}
           >
-            <Image src={current.image} alt={current.alt} fill sizes="(max-width: 860px) 100vw, 55vw" />
+            <Image src={current.image} alt={current.alt} fill sizes="(max-width: 860px) 100vw, 55vw" style={current.position ? { objectPosition: current.position } : undefined} />
           </motion.div>
         </AnimatePresence>
         <span className="showcase-caption">

@@ -13,7 +13,7 @@ const countAvailable = (catalogo: Product[], category: "sandalias" | "tenis" | "
 
 const showcaseBase: Omit<ShowcaseItem, "count">[] = [
   { key: "sandalias", label: "Sandálias", href: "/produtos?categoria=sandalias", image: "/campanha/sandalias.jpg", alt: "Sandália dourada de tiras finas em um terraço ensolarado", caption: "Rasteiras, saltos e flatforms para o verão inteiro." },
-  { key: "tenis", label: "Tênis", href: "/produtos?categoria=tenis", image: "/campanha/tenis.jpg", alt: "Tênis bege matelassê atravessando a faixa de pedestres", caption: "Conforto de todo dia, sem abrir mão do estilo." },
+  { key: "tenis", label: "Tênis", href: "/produtos?categoria=tenis", image: "/campanha/tenis.jpg", alt: "Tênis bege matelassê atravessando a faixa de pedestres", caption: "Conforto de todo dia, sem abrir mão do estilo.", position: "64% center" },
   { key: "sapatos", label: "Sapatos", href: "/produtos?categoria=sapatos", image: "/campanha/sapatos.jpg", alt: "Slingback prata com biqueira dourada sobre pedestal e fundo vermelho", caption: "Scarpins, mules e mocassins para ocasiões que pedem mais." },
 ];
 
