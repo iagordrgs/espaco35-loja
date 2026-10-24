@@ -1,6 +1,6 @@
 // Dados do negócio num lugar só. Mudou o número do WhatsApp, o endereço do site ou o horário? Muda aqui.
 
-export const SITE_URL = "https://espaco35-loja.vercel.app";
+export const SITE_URL = "https://espaco35.vercel.app";
 
 export const WHATSAPP = "5585992442091"; // 55 + DDD + número, só dígitos
 export const WHATSAPP_EXIBIDO = "(85) 99244-2091";
