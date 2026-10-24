@@ -5,14 +5,14 @@ import { startTransition, useActionState, useMemo, useState, type FormEvent } fr
 import { criarPedido, type EstadoForm } from "@/app/painel/actions";
 import { ENTREGAS, PAGAMENTOS, reais } from "@/lib/painel";
 
-export type ParOpcao = { slug: string; name: string; code: string; brand: string; price: number; image: string };
+export type ParOpcao = { slug: string; name: string; code: string; brand: string; price: number; atacado: number; image: string };
 
 const numero = (valor: string) => {
   const n = Number(valor.replace(/\./g, "").replace(",", "."));
   return Number.isFinite(n) && n > 0 ? n : 0;
 };
 
-export default function NovoPedidoForm({ pares, vendedores, inicial }: { pares: ParOpcao[]; vendedores: string[]; inicial: string[] }) {
+export default function NovoPedidoForm({ pares, vendedores, inicial, minimoAtacado }: { pares: ParOpcao[]; vendedores: string[]; inicial: string[]; minimoAtacado: number }) {
   const [estado, acao, enviando] = useActionState<EstadoForm, FormData>(criarPedido, {});
   // envio manual: com action={...} o React limpa o formulário quando o pedido volta com erro
   const enviar = (e: FormEvent<HTMLFormElement>) => {
@@ -24,9 +24,13 @@ export default function NovoPedidoForm({ pares, vendedores, inicial }: { pares: 
   const [busca, setBusca] = useState("");
   const [desconto, setDesconto] = useState("");
   const [frete, setFrete] = useState("");
+  const [tipo, setTipo] = useState<"varejo" | "atacado">("varejo");
 
   const selecionados = pares.filter((p) => escolhidos.includes(p.slug));
-  const subtotal = selecionados.reduce((soma, p) => soma + p.price, 0);
+  const atacado = tipo === "atacado";
+  const faltam = Math.max(minimoAtacado - selecionados.length, 0);
+  const precoDe = (p: ParOpcao) => (atacado ? p.atacado : p.price);
+  const subtotal = selecionados.reduce((soma, p) => soma + precoDe(p), 0);
   const total = Math.max(subtotal - Math.min(numero(desconto), subtotal), 0) + numero(frete);
 
   const resultados = useMemo(() => {
@@ -39,6 +43,15 @@ export default function NovoPedidoForm({ pares, vendedores, inicial }: { pares: 
     <form onSubmit={enviar} className="painel-form">
       <section className="painel-bloco">
         <h2>Pares</h2>
+        <div className="painel-abas painel-tipo" role="radiogroup" aria-label="Tipo de venda">
+          {(["varejo", "atacado"] as const).map((t) => (
+            <label key={t} className={tipo === t ? "is-active" : undefined}>
+              <input type="radio" name="tipo" value={t} checked={tipo === t} onChange={() => setTipo(t)} />
+              {t === "varejo" ? "Varejo" : `Atacado (${minimoAtacado}+ pares)`}
+            </label>
+          ))}
+        </div>
+        {atacado && faltam > 0 && <p className="painel-aviso">Faltam {faltam} {faltam === 1 ? "par" : "pares"} para o preço de atacado.</p>}
         <input type="search" placeholder="Busque pelo nome ou código (ex.: E35-014)" value={busca} onChange={(e) => setBusca(e.target.value)} aria-label="Buscar par disponível" />
         {resultados.length > 0 && (
           <ul className="painel-resultados">
@@ -47,7 +60,7 @@ export default function NovoPedidoForm({ pares, vendedores, inicial }: { pares: 
                 <button type="button" onClick={() => { setEscolhidos([...escolhidos, p.slug]); setBusca(""); }}>
                   <span className="painel-thumb"><Image src={p.image} alt="" fill sizes="48px" /></span>
                   <span><strong>{p.name}</strong><small>{p.code} · {p.brand}</small></span>
-                  <span>{reais(p.price)}</span>
+                  <span>{reais(precoDe(p))}</span>
                 </button>
               </li>
             ))}
@@ -62,7 +75,7 @@ export default function NovoPedidoForm({ pares, vendedores, inicial }: { pares: 
                 <input type="hidden" name="pares" value={p.slug} />
                 <span className="painel-thumb"><Image src={p.image} alt="" fill sizes="48px" /></span>
                 <span><strong>{p.name}</strong><small>{p.code}</small></span>
-                <span>{reais(p.price)}</span>
+                <span>{reais(precoDe(p))}</span>
                 <button type="button" className="painel-botao" onClick={() => setEscolhidos(escolhidos.filter((s) => s !== p.slug))} aria-label={`Tirar ${p.name}`}>Tirar</button>
               </li>
             ))}
@@ -104,7 +117,7 @@ export default function NovoPedidoForm({ pares, vendedores, inicial }: { pares: 
           <div><dt>Total</dt><dd><strong>{reais(total)}</strong></dd></div>
         </dl>
         {estado.erro && <p className="painel-erro" role="alert">{estado.erro}</p>}
-        <button type="submit" className="button button-red" disabled={enviando || selecionados.length === 0}>
+        <button type="submit" className="button button-red" disabled={enviando || selecionados.length === 0 || (atacado && faltam > 0)}>
           {enviando ? "Salvando..." : "Salvar pedido"}
         </button>
       </footer>

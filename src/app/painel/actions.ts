@@ -2,7 +2,8 @@
 
 import { revalidatePath, updateTag } from "next/cache";
 import { redirect } from "next/navigation";
-import { getProduct } from "@/data/products";
+import { ATACADO_MINIMO, getProduct } from "@/data/products";
+import { PRECO_ATACADO } from "@/lib/atacado";
 import { TAG_ESTOQUE } from "@/lib/estoque";
 import { exigirUsuario, supabaseServidor } from "@/lib/supabase/server";
 import { STATUS_PEDIDO, type StatusPedido } from "@/lib/painel";
@@ -57,8 +58,17 @@ export async function criarPedido(_estado: EstadoForm, form: FormData): Promise<
   const cliente = texto(form, "cliente_nome");
   if (!cliente) return { erro: "Informe o nome da cliente." };
 
-  // preço sempre do catálogo, nunca do formulário
-  const itens = pares.map((p) => ({ slug: p.slug, nome: p.name, codigo: p.code, categoria: p.category, preco: p.price ?? 0 }));
+  // atacado só a partir do mínimo de pares; preço sempre do catálogo, nunca do formulário
+  const atacado = texto(form, "tipo") === "atacado";
+  if (atacado && pares.length < ATACADO_MINIMO) return { erro: `Atacado vale a partir de ${ATACADO_MINIMO} pares. Este pedido tem ${pares.length}.` };
+  const itens = pares.map((p) => ({
+    slug: p.slug,
+    nome: p.name,
+    codigo: p.code,
+    categoria: p.category,
+    preco: atacado ? PRECO_ATACADO[p.category] : p.price ?? 0,
+    tabela: atacado ? "atacado" : "varejo",
+  }));
   const subtotal = itens.reduce((soma, item) => soma + item.preco, 0);
   const desconto = Math.min(dinheiro(form, "desconto"), subtotal);
   const frete = dinheiro(form, "frete");

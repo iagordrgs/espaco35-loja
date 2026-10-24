@@ -17,7 +17,7 @@ export const STATUS_VENDA: StatusPedido[] = ["pago", "enviado", "entregue"];
 export const PAGAMENTOS = ["Pix", "Cartão de crédito", "Cartão de débito", "Link de pagamento", "Dinheiro"];
 export const ENTREGAS = ["Correios", "Motoboy / Uber", "Retirada combinada"];
 
-export type ItemPedido = { slug: string; nome: string; codigo: string; categoria: string; preco: number };
+export type ItemPedido = { slug: string; nome: string; codigo: string; categoria: string; preco: number; tabela?: "varejo" | "atacado" };
 
 export type Pedido = {
   id: number;

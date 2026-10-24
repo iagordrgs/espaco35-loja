@@ -47,7 +47,7 @@ export default async function PedidoPage({ params }: { params: Promise<{ id: str
             {pedido.itens.map((item) => (
               <li key={item.slug}>
                 <Link className="painel-link" href={`/produtos/${item.slug}`} target="_blank">{item.nome}</Link>
-                <small>{item.codigo}</small>
+                <small>{item.codigo}{item.tabela === "atacado" ? " · atacado" : ""}</small>
                 <span>{reais(item.preco)}</span>
               </li>
             ))}

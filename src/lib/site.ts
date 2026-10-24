@@ -12,6 +12,13 @@ export function linkWhatsApp(mensagem?: string): string {
   return mensagem ? `${base}?text=${encodeURIComponent(mensagem)}` : base;
 }
 
+export const LINK_INSTAGRAM = `https://instagram.com/${INSTAGRAM}`;
+
+// Atacado: o site não mostra a tabela, só chama a equipe de vendas.
+export const LINK_ATACADO_WHATSAPP = linkWhatsApp(
+  "Olá! Vim pelo site e tenho interesse em comprar no atacado (a partir de 6 peças). Pode me passar a tabela e as condições?",
+);
+
 // Quem vende. O decreto do e-commerce (Decreto 7.962/2013, art. 2º) pede, em lugar de destaque do site:
 // nome empresarial, CNPJ ou CPF, endereço físico e endereço eletrônico.
 // Preencha quando a loja tiver CNPJ: o rodapé passa a mostrar sozinho. Vazio = não aparece.

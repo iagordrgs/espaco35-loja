@@ -5,6 +5,7 @@ import AddToCart from "@/components/AddToCart";
 import ProductCard from "@/components/ProductCard";
 import ProductGallery from "@/components/ProductGallery";
 import ShareProduct from "@/components/ShareProduct";
+import AtacadoChamada from "@/components/AtacadoChamada";
 import { formatPrice, getProduct, getProductsByCategory, isAvailable, products } from "@/data/products";
 import { getCatalogo } from "@/lib/estoque";
 import { WHATSAPP_EXIBIDO, linkWhatsApp } from "@/lib/site";
@@ -68,6 +69,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
             <span><b>✓</b> Pagamento e envio combinados no atendimento</span>
             <span><b>✓</b> Atendimento em Fortaleza e envio para todo o Brasil</span>
           </div>
+          <AtacadoChamada variante="aviso" />
           <p className="detail-policy">
             O frete é combinado pelo WhatsApp. Você pode desistir da compra em até 7 dias após receber o pedido. <Link href="/trocas-e-devolucoes">Saiba mais</Link> · dúvidas? {WHATSAPP_EXIBIDO}.
           </p>

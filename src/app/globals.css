@@ -446,6 +446,37 @@ button { color: inherit; }
   .ticker-track, .campaign-hero-scroll span { animation: none; }
 }
 
+/* ===== Atacado ===== */
+.button-outline-light { border: 1px solid rgba(255,255,255,.4); color: #fff; }
+.button-outline-light:hover { border-color: #fff; background: #fff; color: #111; }
+.atacado-banner { background: var(--brand); color: #fff; }
+.atacado-banner-inner { width: min(100% - 48px, 1320px); margin-inline: auto; display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: clamp(24px, 4vw, 56px); padding-block: 56px; }
+.atacado-banner-numero { font-size: clamp(80px, 10vw, 140px); font-weight: 700; letter-spacing: -.08em; line-height: .85; }
+.atacado-banner .eyebrow-light { color: #fff; opacity: .85; }
+.atacado-banner h2 { margin: 12px 0 10px; font-size: clamp(30px, 3.6vw, 48px); font-weight: 600; letter-spacing: -.05em; line-height: 1; }
+.atacado-banner p { max-width: 520px; margin: 0; font-size: 15px; line-height: 1.6; opacity: .92; }
+.atacado-banner-acoes { display: flex; flex-direction: column; gap: 10px; }
+.atacado-banner .button-red { background: #111; }
+.atacado-banner .button-red:hover { background: #fff; color: #111; }
+.atacado-aviso { display: flex; flex-direction: column; gap: 4px; margin-top: 18px; padding: 14px 16px; border-left: 3px solid var(--brand); background: var(--soft); font-size: 13px; line-height: 1.5; }
+.atacado-aviso strong { font-size: 14px; }
+.atacado-aviso-links { display: flex; gap: 18px; margin-top: 2px; }
+.atacado-aviso-links a { display: inline-flex; align-items: center; min-height: 36px; color: var(--brand); font-weight: 700; }
+.footer-atacado { margin-top: 16px !important; font-size: 12px; color: #bdbdbd; }
+.footer-atacado a { color: #fff; text-decoration: underline; text-underline-offset: 3px; }
+@media (max-width: 860px) {
+  .atacado-banner-inner { grid-template-columns: 1fr; gap: 18px; padding-block: 44px; }
+  .atacado-banner-numero { font-size: 88px; }
+  .atacado-banner-acoes { flex-direction: column; }
+  .atacado-banner-acoes .button { width: 100%; }
+}
+@media (max-width: 720px) {
+  .atacado-banner-inner { width: calc(100% - 32px); }
+  .atacado-aviso { font-size: 14px; }
+  .atacado-aviso-links a { min-height: 44px; font-size: 14px; }
+  .footer-atacado { font-size: 13px; }
+}
+
 /* ===== Painel de pedidos ===== */
 .painel { min-height: 100vh; display: grid; grid-template-columns: 232px 1fr; background: #f6f5f3; }
 .painel-lateral { position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; gap: 28px; padding: 24px 16px; background: #111; color: #fff; }
@@ -503,6 +534,11 @@ button { color: inherit; }
 .painel-botao.principal:hover { background: var(--brand); border-color: var(--brand); }
 .painel-botao.perigo { color: var(--brand-dark); }
 .painel-botao.perigo:hover { border-color: var(--brand); background: #fde8e8; }
+.painel-tipo { display: inline-flex; margin-bottom: 12px; }
+.painel-tipo label { padding: 8px 14px; border-radius: 5px; font-size: 13px; font-weight: 700; color: #555; cursor: pointer; }
+.painel-tipo label.is-active { background: #111; color: #fff; }
+.painel-tipo input { position: absolute; opacity: 0; pointer-events: none; }
+.painel-aviso { margin: 0 0 10px; padding: 8px 12px; border-radius: 6px; background: #fff4e0; color: #9a5b00; font-size: 13px; font-weight: 600; }
 .painel-nada { padding: 28px; text-align: center; color: var(--muted); }
 .painel-erro { margin: 0; padding: 10px 12px; border-radius: 6px; background: #fde8e8; color: var(--brand-dark); font-size: 13px; font-weight: 600; }
 .painel-bloco { padding: 20px; border: 1px solid var(--line); border-radius: 10px; background: #fff; }

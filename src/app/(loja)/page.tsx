@@ -1,6 +1,7 @@
 import Link from "next/link";
 import ProductCard from "@/components/ProductCard";
 import Reveal from "@/components/Reveal";
+import AtacadoChamada from "@/components/AtacadoChamada";
 import CategoryShowcase, { type ShowcaseItem } from "@/components/home/CategoryShowcase";
 import HeroCampaign from "@/components/home/HeroCampaign";
 import ProductRail from "@/components/home/ProductRail";
@@ -17,7 +18,7 @@ const showcaseBase: Omit<ShowcaseItem, "count">[] = [
   { key: "sapatos", label: "Sapatos", href: "/produtos?categoria=sapatos", image: "/campanha/sapatos.jpg", alt: "Slingback prata com biqueira dourada sobre pedestal e fundo vermelho", caption: "Scarpins, mules e mocassins para ocasiões que pedem mais." },
 ];
 
-const ticker = ["Tamanho 35", "Peças únicas", "Novos e originais", "Enviamos para todo o Brasil", "Atendimento pelo WhatsApp", "Mississipi · Pink Cats · Campesí"];
+const ticker = ["Tamanho 35", "Peças únicas", "Novos e originais", "Enviamos para todo o Brasil", "Atendimento pelo WhatsApp", "Atacado a partir de 6 peças", "Mississipi · Pink Cats · Campesí"];
 
 export default async function Home() {
   const catalogo = await getCatalogo();
@@ -45,6 +46,8 @@ export default async function Home() {
         </Reveal>
         <CategoryShowcase items={showcase} />
       </section>
+
+      <AtacadoChamada variante="banner" />
 
       <section id="vitrine" className="home-section home-feature">
         <Reveal className="section-heading section-shell">

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { HORARIO, INSTAGRAM, VENDEDOR, WHATSAPP, WHATSAPP_EXIBIDO, linkWhatsApp } from "@/lib/site";
+import { HORARIO, INSTAGRAM, LINK_ATACADO_WHATSAPP, VENDEDOR, WHATSAPP, WHATSAPP_EXIBIDO, linkWhatsApp } from "@/lib/site";
 
 const WA = linkWhatsApp("Olá! Vim pelo site da Espaço 35 e quero conhecer a coleção.");
 const IG = `https://instagram.com/${INSTAGRAM}`;
@@ -31,6 +31,7 @@ export default function Footer() {
           <span className="eyebrow eyebrow-light">Fale com a gente</span>
           <p>Escolheu seu par? A gente combina pagamento e envio com você, direto pelo WhatsApp.</p>
           <a href={WA} target="_blank" rel="noopener noreferrer" className="button button-light">Chamar no WhatsApp <span>↗</span></a>
+          <p className="footer-atacado">Atacado a partir de 6 peças: <a href={LINK_ATACADO_WHATSAPP} target="_blank" rel="noopener noreferrer">fale com a equipe de vendas ↗</a></p>
         </div>
       </div>
       <div className="footer-bottom">
