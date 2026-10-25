@@ -57,6 +57,15 @@ create index if not exists pedidos_status_idx on public.pedidos (status);
 -- Site público: só LÊ a situação dos pares (sem dado de cliente).
 -- Painel: quem fez login (usuários criados por você no Supabase) lê e escreve tudo.
 
+-- Permissões explícitas (funciona mesmo com "Expor automaticamente novas tabelas" desligado).
+-- Quem vê o quê continua decidido pelas regras (policies) logo abaixo.
+grant usage on schema public to anon, authenticated, service_role;
+grant select on public.estoque to anon, authenticated;
+grant insert, update, delete on public.estoque to authenticated;
+grant select, insert, update, delete on public.pedidos to authenticated;
+grant all on public.estoque, public.pedidos to service_role;
+grant usage, select on all sequences in schema public to authenticated, service_role;
+
 alter table public.estoque enable row level security;
 alter table public.pedidos enable row level security;
 
