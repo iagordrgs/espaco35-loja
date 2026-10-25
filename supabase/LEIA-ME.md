@@ -18,6 +18,7 @@ O painel (`/painel`) guarda pedidos e a situação de cada par no Supabase. São
 1. **Authentication > Users > Add user > Create new user**.
 2. Seu e-mail e uma senha forte. Marque **Auto Confirm User**.
 3. Em **Authentication > Sign In / Providers**, desligue **Allow new users to sign up**.
+   Assim ninguém cria conta sozinho.
 4. **Coloque o usuário na equipe** (sem isso ele não entra no painel, mesmo com senha certa).
    No **SQL Editor**, rode trocando o e-mail:
    ```sql
@@ -26,7 +27,6 @@ O painel (`/painel`) guarda pedidos e a situação de cada par no Supabase. São
    on conflict (user_id) do nothing;
    ```
    Para tirar alguém da equipe: `delete from public.equipe where email = 'pessoa@exemplo.com';`
-   Assim ninguém cria conta sozinho: só quem você adicionar aqui entra no painel.
 
 ## 4. Ligar o site ao projeto
 
