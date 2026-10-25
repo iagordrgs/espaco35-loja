@@ -25,6 +25,6 @@ export const LINK_ATACADO_WHATSAPP = linkWhatsApp(
 export const VENDEDOR = {
   nomeEmpresarial: "",
   documento: "", // CNPJ (ou CPF)
-  endereco: "",
+  endereco: "Rua Pedro Borges, 33 · Centro · Fortaleza - CE",
   email: "",
 };

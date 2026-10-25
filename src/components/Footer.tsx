@@ -39,8 +39,9 @@ export default function Footer() {
           <Link href="/trocas-e-devolucoes">Trocas e devoluções</Link>
           <span>© {new Date().getFullYear()} Espaço 35</span>
         </div>
-        {VENDEDOR.nomeEmpresarial && VENDEDOR.documento ? (
-          <p>{VENDEDOR.nomeEmpresarial} · {VENDEDOR.documento}{VENDEDOR.endereco ? ` · ${VENDEDOR.endereco}` : ""}{VENDEDOR.email ? ` · ${VENDEDOR.email}` : ""}</p>
+        {/* mostra o que estiver preenchido em VENDEDOR (site.ts); nome e CNPJ entram quando a MEI abrir */}
+        {[VENDEDOR.nomeEmpresarial, VENDEDOR.documento, VENDEDOR.endereco, VENDEDOR.email].some(Boolean) ? (
+          <p>{[VENDEDOR.nomeEmpresarial, VENDEDOR.documento, VENDEDOR.endereco, VENDEDOR.email].filter(Boolean).join(" · ")}</p>
         ) : null}
         <span className="footer-note">Par único · tamanho 35 · sujeito à disponibilidade</span>
       </div>
