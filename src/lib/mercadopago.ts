@@ -7,8 +7,14 @@ import { InvalidWebhookSignatureError, WebhookSignatureValidator } from "mercado
 //   MERCADOPAGO_API             só para testes locais (padrão https://api.mercadopago.com)
 const API = process.env.MERCADOPAGO_API ?? "https://api.mercadopago.com";
 
+// Só liga com TUDO cadastrado: sem a assinatura do webhook, uma cliente pagaria e o pedido nunca viraria "Pago".
 export const pagamentoOnlineAtivo = () =>
-  Boolean(process.env.MERCADOPAGO_ACCESS_TOKEN && process.env.SUPABASE_SERVICE_ROLE_KEY && process.env.NEXT_PUBLIC_SUPABASE_URL);
+  Boolean(
+    process.env.MERCADOPAGO_ACCESS_TOKEN &&
+      process.env.MERCADOPAGO_WEBHOOK_SECRET &&
+      process.env.SUPABASE_SERVICE_ROLE_KEY &&
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+  );
 
 async function chamar<T>(caminho: string, init: RequestInit = {}): Promise<T> {
   const resposta = await fetch(`${API}${caminho}`, {
