@@ -142,8 +142,11 @@ button { color: inherit; }
 .product-price-line { display: flex; align-items: baseline; gap: 8px; margin-top: 10px; }
 .product-price-line s { color: #8d8d8d; font-size: 10px; }
 .product-price { font-size: 16px; font-weight: 800; letter-spacing: -.04em; }
-.quick-add { width: 100%; min-height: 39px; margin-top: 12px; border: 1px solid #111; background: #111; color: #fff; font-size: 10px; font-weight: 700; cursor: pointer; transition: background .2s, border .2s; }
+.quick-add { display: flex; align-items: center; justify-content: center; gap: 7px; width: 100%; min-height: 39px; text-align: center; margin-top: 12px; border: 1px solid #111; background: #111; color: #fff; font-size: 10px; font-weight: 700; cursor: pointer; transition: background .2s, border .2s; }
 .quick-add:hover:not(:disabled) { border-color: var(--brand); background: var(--brand); }
+.quick-add.is-added, .quick-add.is-added:hover { border-color: var(--brand); background: var(--brand); color: #fff; animation: na-sacola .45s cubic-bezier(.2,.9,.3,1.3); }
+.button.is-added { animation: na-sacola .45s cubic-bezier(.2,.9,.3,1.3); }
+@keyframes na-sacola { 0% { transform: scale(.94); opacity: .6; } 60% { transform: scale(1.03); opacity: 1; } 100% { transform: scale(1); } }
 .quick-add:disabled { border-color: #ddd; background: #eee; color: #777; cursor: not-allowed; }
 .view-photos { margin-top: 10px; color: #555; font-size: 9px; }
 .screen-reader-only { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; clip-path: inset(50%); }
@@ -753,3 +756,20 @@ input[type="search"]::-webkit-search-decoration { -webkit-appearance: none; }
   .brand-name span { display: none; }
   .brand-name { font-size: 13px; }
 }
+
+/* Aviso ao adicionar à sacola: aparece na hora, com atalho para finalizar */
+.sacola-aviso-fundo { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 16px; background: rgba(17,17,17,.42); animation: aviso-fundo .2s ease-out; }
+.sacola-aviso { position: relative; width: min(100%, 400px); padding: 26px 24px 22px; background: #fff; text-align: center; box-shadow: 0 24px 70px rgba(0,0,0,.28); animation: aviso-entra .35s cubic-bezier(.2,.9,.3,1.2); }
+.sacola-aviso-fechar { position: absolute; top: 8px; right: 8px; width: 40px; height: 40px; font-size: 22px; line-height: 1; color: #555; cursor: pointer; }
+.sacola-aviso-check { display: inline-grid; place-items: center; width: 38px; height: 38px; border-radius: 50%; background: var(--brand); color: #fff; font-size: 18px; font-weight: 700; animation: aviso-check .5s .1s cubic-bezier(.2,.9,.3,1.5) both; }
+.sacola-aviso h2 { margin-top: 10px; font-size: 18px; font-weight: 700; }
+.sacola-aviso-par { display: flex; align-items: center; gap: 14px; margin: 18px 0 20px; padding: 10px; background: #f3f2ef; text-align: left; }
+.sacola-aviso-par img { width: 72px; height: 72px; object-fit: contain; background: #fff; }
+.sacola-aviso-par strong { display: block; font-size: 14px; }
+.sacola-aviso-par span { display: block; margin-top: 4px; font-size: 13px; color: var(--brand); font-weight: 700; }
+.sacola-aviso .button { width: 100%; }
+.sacola-aviso-continuar { display: block; width: 100%; margin-top: 12px; padding: 8px; font-size: 13px; text-decoration: underline; color: #333; cursor: pointer; }
+@keyframes aviso-fundo { from { opacity: 0; } }
+@keyframes aviso-entra { from { opacity: 0; transform: translateY(18px) scale(.96); } }
+@keyframes aviso-check { from { transform: scale(0); } }
+@media (prefers-reduced-motion: reduce) { .sacola-aviso, .sacola-aviso-fundo, .sacola-aviso-check, .quick-add.is-added, .button.is-added { animation: none; } }

@@ -41,6 +41,7 @@ export async function POST(request: Request) {
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return erro("Informe um e-mail válido.");
   if (telefone.replace(/\D/g, "").length < 10) return erro("Informe seu WhatsApp com DDD.");
   if (!numero) return erro("Informe o número do endereço.");
+  if (complemento.length < 2) return erro("Informe o complemento (apartamento e bloco, ou casa).");
 
   // Limites contra quem quer travar o estoque sem pagar: no máximo 2 reservas abertas por aparelho/rede.
   // A mesma cliente (e-mail ou WhatsApp) tentando de novo: a reserva anterior é cancelada e os pares voltam.
@@ -49,6 +50,12 @@ export async function POST(request: Request) {
   const { data: abertos } = await admin.from("pedidos").select("id,cliente_email,cliente_telefone,cliente_ip_hash")
     .eq("origem", "site").eq("status", "novo").gt("expira_em", new Date().toISOString());
   const digitos = telefone.replace(/\D/g, "");
+  // Pedido anterior deste mesmo navegador (o código público é secreto: quem tem, abriu o pedido).
+  const substituir = texto(corpo?.substituir, 40);
+  if (/^[0-9a-f-]{36}$/i.test(substituir)) {
+    const { data: anterior } = await admin.from("pedidos").select("id").eq("codigo_publico", substituir).eq("origem", "site").eq("status", "novo").maybeSingle();
+    if (anterior) await admin.rpc("cancelar_pedido_site", { pedido: anterior.id, situacao: "substituido" });
+  }
   for (const p of abertos ?? []) {
     if (p.cliente_email?.toLowerCase() === email.toLowerCase() || (p.cliente_telefone ?? "").replace(/\D/g, "") === digitos) {
       await admin.rpc("cancelar_pedido_site", { pedido: p.id, situacao: "substituido" });
@@ -123,7 +130,7 @@ export async function POST(request: Request) {
     });
     revalidateTag(TAG_ESTOQUE, { expire: 0 }); // expira já: o par vendido não pode aparecer nem uma vez a mais
     const usarSandbox = process.env.MERCADOPAGO_SANDBOX === "1" && preferencia.sandbox_init_point;
-    return Response.json({ url: usarSandbox ? preferencia.sandbox_init_point : preferencia.init_point });
+    return Response.json({ url: usarSandbox ? preferencia.sandbox_init_point : preferencia.init_point, codigo: pedido?.codigo_publico });
   } catch {
     await admin.rpc("cancelar_pedido_site", { pedido: idPedido, situacao: "erro_checkout" });
     return erro("O pagamento não abriu agora. Tente de novo em instantes ou finalize pelo WhatsApp.", 502);

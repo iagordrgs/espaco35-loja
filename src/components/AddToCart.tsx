@@ -19,7 +19,7 @@ export default function AddToCart({ product }: { product: Product }) {
         {!available ? (
           <button type="button" disabled className="button button-outline">{product.reserved ? "Par reservado para outra cliente" : "Este par já foi vendido"}</button>
         ) : added ? (
-          <Link href="/carrinho" className="button button-red">Na sacola · ver pedido <span>↗</span></Link>
+          <Link href="/checkout" className="button button-red is-added">✓ Na sacola · finalizar compra <span>↗</span></Link>
         ) : (
           <button type="button" onClick={() => add(product.slug)} className="button button-red">Adicionar à sacola <span>+</span></button>
         )}

@@ -5,6 +5,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import WhatsAppFloat from "@/components/WhatsAppFloat";
 import MarcaHidratacao from "@/components/MarcaHidratacao";
+import SacolaAviso from "@/components/SacolaAviso";
 import { getEstoque } from "@/lib/estoque";
 
 export default async function LojaLayout({ children }: { children: React.ReactNode }) {
@@ -19,6 +20,7 @@ export default async function LojaLayout({ children }: { children: React.ReactNo
           <main className="flex-1">{children}</main>
           <Footer />
           <WhatsAppFloat />
+          <SacolaAviso />
           <MarcaHidratacao />
         </FavoritesProvider>
       </CartProvider>

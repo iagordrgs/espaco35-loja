@@ -52,7 +52,7 @@ export default function ProductCard({ product, reveal = true }: { product: Produ
           <strong className="product-price">{formatPrice(product.price)}</strong>
         </span>
         {available ? (
-          added ? <Link href="/carrinho" className="quick-add">Na sacola · ver pedido <span aria-hidden="true">↗</span></Link> : <button type="button" onClick={addProduct} className="quick-add">Adicionar à sacola</button>
+          added ? <Link href="/carrinho" className="quick-add is-added"><span aria-hidden="true">✓</span> Na sacola</Link> : <button type="button" onClick={addProduct} className="quick-add">Adicionar à sacola</button>
         ) : <button type="button" className="quick-add" disabled>Par vendido</button>}
         <span className="screen-reader-only" role="status" aria-live="polite">{notice}</span>
       </div>

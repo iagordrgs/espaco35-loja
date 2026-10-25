@@ -6,6 +6,7 @@ import {
   useEffect,
   useMemo,
   useReducer,
+  useState,
   type ReactNode,
 } from "react";
 import { getProduct, isAvailable, type Product } from "@/data/products";
@@ -20,13 +21,30 @@ import { aplicarEstoque } from "@/lib/estoque-regras";
 
 const STORAGE_KEY = "espaco35-cart-v2";
 const CHAVE_ANTIGA = "espaco35-cart"; // versão anterior: lista de itens com preço e quantidade
+const CHAVE_RESERVA = "espaco35-minha-reserva";
+
+// Pedido que esta cliente abriu no pagamento online. Os pares dele ficam "reservados" no banco, mas para ela
+// continuam na sacola: se voltar do Mercado Pago sem pagar, consegue tentar de novo (o pedido antigo é trocado).
+export type MinhaReserva = { codigo: string; slugs: string[]; ate: number };
+
+function lerReserva(): MinhaReserva | null {
+  try {
+    const r = JSON.parse(localStorage.getItem(CHAVE_RESERVA) ?? "null") as MinhaReserva | null;
+    if (r && typeof r.codigo === "string" && Array.isArray(r.slugs) && r.ate > Date.now()) return r;
+    localStorage.removeItem(CHAVE_RESERVA);
+  } catch {
+    // storage indisponível ou dado corrompido
+  }
+  return null;
+}
 
 export type ParIndisponivel = { slug: string; name: string | null };
 
-type CartState = { slugs: string[]; hydrated: boolean };
+type CartState = { slugs: string[]; hydrated: boolean; reserva: MinhaReserva | null };
 
 type CartAction =
-  | { type: "HYDRATE"; slugs: string[] }
+  | { type: "HYDRATE"; slugs: string[]; reserva: MinhaReserva | null }
+  | { type: "RESERVA"; reserva: MinhaReserva | null }
   | { type: "ADD"; slug: string }
   | { type: "REMOVE"; slug: string }
   | { type: "REMOVE_MANY"; slugs: string[] }
@@ -35,7 +53,9 @@ type CartAction =
 function reducer(state: CartState, action: CartAction): CartState {
   switch (action.type) {
     case "HYDRATE":
-      return { slugs: action.slugs, hydrated: true };
+      return { slugs: action.slugs, hydrated: true, reserva: action.reserva };
+    case "RESERVA":
+      return { ...state, reserva: action.reserva };
     case "ADD":
       // par único: adicionar de novo não faz nada
       return state.slugs.includes(action.slug)
@@ -49,7 +69,7 @@ function reducer(state: CartState, action: CartAction): CartState {
         slugs: state.slugs.filter((s) => !action.slugs.includes(s)),
       };
     case "CLEAR":
-      return { ...state, slugs: [] };
+      return { ...state, slugs: [], reserva: null };
     default:
       return state;
   }
@@ -95,6 +115,12 @@ type CartContextValue = {
   remove: (slug: string) => void;
   removeUnavailable: () => void;
   clear: () => void;
+  /** último par adicionado (abre o aviso com o atalho para finalizar) */
+  ultimoAdicionado: Product | null;
+  fecharAviso: () => void;
+  /** pedido aguardando pagamento aberto por esta cliente */
+  reserva: MinhaReserva | null;
+  guardarReserva: (reserva: MinhaReserva) => void;
   totalItems: number;
   totalPrice: number;
 };
@@ -102,11 +128,12 @@ type CartContextValue = {
 const CartContext = createContext<CartContextValue | null>(null);
 
 export function CartProvider({ children }: { children: ReactNode }) {
-  const [state, dispatch] = useReducer(reducer, { slugs: [], hydrated: false });
+  const [state, dispatch] = useReducer(reducer, { slugs: [], hydrated: false, reserva: null });
+  const [ultimoSlug, setUltimoSlug] = useState<string | null>(null);
 
   // Lê do celular quando a página abre.
   useEffect(() => {
-    dispatch({ type: "HYDRATE", slugs: lerSlugs() });
+    dispatch({ type: "HYDRATE", slugs: lerSlugs(), reserva: lerReserva() });
   }, []);
 
   // Guarda a cada mudança (só depois de ler, para não apagar o carrinho que estava salvo).
@@ -127,7 +154,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
     for (const slug of state.slugs) {
       const base = getProduct(slug);
       // situação do painel: par reservado ou vendido para outra cliente sai do total
-      const produto = base && aplicarEstoque(base, estoque);
+      let produto = base && aplicarEstoque(base, estoque);
+      // reservado pelo pedido desta própria cliente: continua na sacola dela
+      if (produto?.reserved && state.reserva?.slugs.includes(slug)) produto = { ...produto, reserved: false };
       if (produto && isAvailable(produto)) products.push(produto);
       else unavailable.push({ slug, name: produto?.name ?? null });
     }
@@ -136,15 +165,36 @@ export function CartProvider({ children }: { children: ReactNode }) {
       products,
       unavailable,
       has: (slug) => state.slugs.includes(slug),
-      add: (slug) => dispatch({ type: "ADD", slug }),
+      add: (slug) => {
+        dispatch({ type: "ADD", slug });
+        setUltimoSlug(slug);
+      },
       remove: (slug) => dispatch({ type: "REMOVE", slug }),
       removeUnavailable: () =>
         dispatch({ type: "REMOVE_MANY", slugs: unavailable.map((u) => u.slug) }),
-      clear: () => dispatch({ type: "CLEAR" }),
+      clear: () => {
+        dispatch({ type: "CLEAR" });
+        try {
+          localStorage.removeItem(CHAVE_RESERVA);
+        } catch {
+          // storage indisponível
+        }
+      },
+      ultimoAdicionado: (ultimoSlug && products.find((p) => p.slug === ultimoSlug)) || null,
+      fecharAviso: () => setUltimoSlug(null),
+      reserva: state.reserva,
+      guardarReserva: (nova) => {
+        dispatch({ type: "RESERVA", reserva: nova });
+        try {
+          localStorage.setItem(CHAVE_RESERVA, JSON.stringify(nova));
+        } catch {
+          // storage indisponível — segue só na memória
+        }
+      },
       totalItems: products.length,
       totalPrice: products.reduce((soma, p) => soma + (p.price ?? 0), 0),
     };
-  }, [state, estoque]);
+  }, [state, estoque, ultimoSlug]);
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 }

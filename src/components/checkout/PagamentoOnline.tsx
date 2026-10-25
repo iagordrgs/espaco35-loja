@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useCart } from "@/context/CartContext";
 import { formatPrice, type Product } from "@/data/products";
 
 type Opcao = { id: string; nome: string; preco: number; prazo: string };
@@ -18,6 +19,7 @@ export default function PagamentoOnline({ products, freteFortaleza }: { products
   const [calculando, setCalculando] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [erro, setErro] = useState("");
+  const { reserva, guardarReserva } = useCart();
 
   const subtotal = products.reduce((s, p) => s + (p.price ?? 0), 0);
   const frete = opcoes.find((o) => o.id === freteId);
@@ -62,10 +64,12 @@ export default function PagamentoOnline({ products, freteFortaleza }: { products
           cliente: { nome: f.get("nome"), email: f.get("email"), telefone: f.get("telefone") },
           endereco: { cep, rua: f.get("rua"), numero: f.get("numero"), complemento: f.get("complemento"), bairro: f.get("bairro") },
           freteId,
+          substituir: reserva?.codigo,
         }),
       });
       const dados = await resposta.json();
       if (!resposta.ok || !dados.url) throw new Error(dados.erro ?? "Não foi possível abrir o pagamento.");
+      if (dados.codigo) guardarReserva({ codigo: dados.codigo, slugs: products.map((p) => p.slug), ate: Date.now() + 30 * 60_000 });
       window.location.href = dados.url;
     } catch (falha) {
       setErro(falha instanceof Error ? falha.message : "Não foi possível abrir o pagamento.");
@@ -97,7 +101,7 @@ export default function PagamentoOnline({ products, freteFortaleza }: { products
           <>
             <label className="largo">Rua<input name="rua" defaultValue={endereco.rua} key={`rua-${endereco.cep}`} autoComplete="address-line1" required /></label>
             <label>Número<input name="numero" inputMode="numeric" required /></label>
-            <label>Complemento<input name="complemento" placeholder="Apto, bloco…" autoComplete="address-line2" /></label>
+            <label>Complemento<input name="complemento" placeholder="Apto e bloco, ou casa" autoComplete="address-line2" required minLength={2} /></label>
             <label>Bairro<input name="bairro" defaultValue={endereco.bairro} key={`bairro-${endereco.cep}`} required /></label>
             <p className="checkout-cidade">{endereco.cidade} - {endereco.uf}</p>
           </>
