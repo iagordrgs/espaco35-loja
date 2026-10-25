@@ -4,6 +4,7 @@ import { ROTULO_STATUS, STATUS_PEDIDO, dataHora, reais, type Pedido, type Status
 
 export default async function PedidosPage({ searchParams }: { searchParams: Promise<{ status?: string; q?: string }> }) {
   const { supabase } = await exigirUsuario();
+  await supabase.rpc("cancelar_expirados"); // pedidos do site não pagos a tempo voltam ao estoque
   const { status, q } = await searchParams;
   const filtro = STATUS_PEDIDO.includes(status as StatusPedido) ? (status as StatusPedido) : undefined;
 
@@ -47,7 +48,7 @@ export default async function PedidosPage({ searchParams }: { searchParams: Prom
           <tbody>
             {pedidos.map((p) => (
               <tr key={p.id}>
-                <td><Link className="painel-link" href={`/painel/pedidos/${p.id}`}><strong>#{p.id}</strong></Link><small className="painel-sub">{dataHora(p.criado_em)}</small></td>
+                <td><Link className="painel-link" href={`/painel/pedidos/${p.id}`}><strong>#{p.id}</strong></Link>{p.origem === "site" && <span className="painel-tag">Site</span>}<small className="painel-sub">{dataHora(p.criado_em)}</small></td>
                 <td>{p.cliente_nome}<small className="painel-sub">{p.cliente_cidade}</small></td>
                 <td>{p.itens.map((i) => i.nome).join(", ")}</td>
                 <td>{reais(p.total)}<small className="painel-sub">{p.pagamento}</small></td>

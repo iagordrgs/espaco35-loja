@@ -40,3 +40,7 @@ Na Vercel: **Project espaco35-loja > Settings > Environment Variables**, adicion
 - **Reserva manual** (tela Estoque) segura o par por algumas horas; vencido o prazo, ele volta sozinho ao site.
 - Dois vendedores nunca conseguem vender o mesmo par: o banco trava o par antes de gravar o pedido.
 - Sem o Supabase ligado, o site funciona igual (usa só o `products.ts`) e o painel mostra este passo a passo.
+
+## Vender pelo site (Pix, cartão e frete)
+
+Depois do painel funcionando, siga `ATIVAR-PAGAMENTO.md` na raiz do projeto.

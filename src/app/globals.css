@@ -446,6 +446,31 @@ button { color: inherit; }
   .ticker-track, .campaign-hero-scroll span { animation: none; }
 }
 
+/* ===== Pagamento online no checkout ===== */
+.pagamento-online { margin-bottom: 18px; border: 2px solid #111; }
+.checkout-campos { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 16px 0 0; padding: 0; border: 0; }
+.checkout-campos label { display: flex; flex-direction: column; gap: 6px; font-size: 12px; font-weight: 700; color: #444; }
+.checkout-campos .largo { grid-column: 1 / -1; }
+.checkout-campos input { height: 48px; padding: 0 12px; border: 1px solid var(--line); border-radius: 0; background: #fff; font-size: 16px; color: #111; -webkit-appearance: none; appearance: none; }
+.checkout-campos input:focus { border-color: #111; outline: none; }
+.checkout-cidade { grid-column: 1 / -1; margin: 0; font-size: 13px; font-weight: 700; }
+.checkout-aviso { grid-column: 1 / -1; margin: 8px 0 0; padding: 10px 12px; background: #fde8e8; color: var(--brand-dark); font-size: 13px; font-weight: 600; }
+.checkout-frete { display: grid; gap: 8px; margin: 18px 0; padding: 0; border: 0; }
+.checkout-frete legend { margin-bottom: 8px; font-size: 12px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.checkout-frete label { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 12px; min-height: 56px; padding: 10px 14px; border: 1px solid var(--line); background: #fff; cursor: pointer; }
+.checkout-frete label.is-active { border-color: #111; box-shadow: inset 0 0 0 1px #111; }
+.checkout-frete input { accent-color: var(--brand); width: 18px; height: 18px; }
+.checkout-frete strong { display: block; font-size: 14px; }
+.checkout-frete small { color: var(--muted); font-size: 12px; }
+.checkout-frete b { font-size: 15px; white-space: nowrap; }
+.pagamento-online .button { width: 100%; margin-top: 14px; }
+.pedido-retorno .pedido-resumo { width: min(100%, 460px); margin: 18px auto; padding: 0; list-style: none; text-align: left; }
+.pedido-resumo li { display: flex; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+.pedido-resumo li.total { font-size: 17px; font-weight: 700; border-bottom: 0; }
+@media (max-width: 560px) {
+  .checkout-campos { grid-template-columns: 1fr; }
+}
+
 /* ===== Atacado ===== */
 .button-outline-light { border: 1px solid rgba(255,255,255,.4); color: #fff; }
 .button-outline-light:hover { border-color: #fff; background: #fff; color: #111; }
@@ -534,6 +559,7 @@ button { color: inherit; }
 .painel-botao.principal:hover { background: var(--brand); border-color: var(--brand); }
 .painel-botao.perigo { color: var(--brand-dark); }
 .painel-botao.perigo:hover { border-color: var(--brand); background: #fde8e8; }
+.painel-tag { display: inline-block; margin-left: 6px; padding: 2px 7px; border-radius: 4px; background: var(--brand); color: #fff; font-size: 10px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; vertical-align: middle; }
 .painel-tipo { display: inline-flex; margin-bottom: 12px; }
 .painel-tipo label { padding: 8px 14px; border-radius: 5px; font-size: 13px; font-weight: 700; color: #555; cursor: pointer; }
 .painel-tipo label.is-active { background: #111; color: #fff; }

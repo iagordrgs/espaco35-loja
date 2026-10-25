@@ -1,0 +1,64 @@
+import { revalidatePath, revalidateTag } from "next/cache";
+import { avisarEquipe, escapar } from "@/lib/email";
+import { TAG_ESTOQUE } from "@/lib/estoque";
+import { assinaturaValida, buscarPagamento } from "@/lib/mercadopago";
+import { reais, type ItemPedido } from "@/lib/painel";
+import { SITE_URL } from "@/lib/site";
+import { supabaseAdmin } from "@/lib/supabase/admin";
+
+const RECUSADOS = ["rejected", "cancelled", "refunded", "charged_back"];
+
+// Aviso do Mercado Pago sobre um pagamento. Confere a assinatura, busca o pagamento na API (nunca confia no corpo)
+// e atualiza o pedido: aprovado -> pago + e-mail para a equipe; recusado -> cancelado e pares de volta ao site.
+export async function POST(request: Request) {
+  const url = new URL(request.url);
+  const corpo = await request.json().catch(() => ({}));
+  const tipo = url.searchParams.get("type") ?? corpo?.type;
+  const dataId = url.searchParams.get("data.id") ?? (corpo?.data?.id != null ? String(corpo.data.id) : null);
+
+  if (!assinaturaValida(request.headers.get("x-signature"), request.headers.get("x-request-id"), dataId)) {
+    return new Response("assinatura inválida", { status: 401 });
+  }
+  if (tipo !== "payment" || !dataId) return new Response("ok");
+
+  const admin = supabaseAdmin();
+  if (!admin) return new Response("banco não configurado", { status: 500 });
+
+  const pagamento = await buscarPagamento(dataId);
+  const idPedido = Number(pagamento.external_reference);
+  if (!idPedido) return new Response("ok");
+
+  if (pagamento.status === "approved") {
+    const { data: resultado, error } = await admin.rpc("confirmar_pagamento", { pedido: idPedido, id_pagamento: String(pagamento.id) });
+    if (error) return new Response("erro ao confirmar", { status: 500 }); // o Mercado Pago tenta de novo
+    if (resultado !== "ja_pago") await enviarAviso(idPedido, resultado === "conflito");
+  } else if (RECUSADOS.includes(pagamento.status)) {
+    await admin.rpc("cancelar_pedido_site", { pedido: idPedido, situacao: pagamento.status });
+  } else {
+    await admin.from("pedidos").update({ pagamento_status: pagamento.status, pagamento_id: String(pagamento.id) }).eq("id", idPedido).eq("status", "novo");
+  }
+
+  revalidateTag(TAG_ESTOQUE, { expire: 0 }); // expira já: o par vendido não pode aparecer nem uma vez a mais
+  revalidatePath("/painel", "layout");
+  return new Response("ok");
+}
+
+async function enviarAviso(idPedido: number, conflito: boolean) {
+  const admin = supabaseAdmin();
+  const { data: p } = await admin!.from("pedidos").select("*").eq("id", idPedido).single();
+  if (!p) return;
+  const e = p.endereco ?? {};
+  const itens = (p.itens as ItemPedido[]).map((i) => `<li>${escapar(i.nome)} (${escapar(i.codigo)}) · ${reais(i.preco)}</li>`).join("");
+  await avisarEquipe(
+    `${conflito ? "⚠️ CONFERIR " : ""}Novo pedido pago #${p.id} · ${p.cliente_nome} · ${reais(p.total)}`,
+    `<h2>Pedido #${p.id} pago pelo site</h2>
+     ${conflito ? "<p><strong>Atenção:</strong> o pagamento chegou depois que a reserva venceu e algum par já foi para outra cliente. Combine reembolso ou troca.</p>" : ""}
+     <ul>${itens}</ul>
+     <p>Frete: ${reais(p.frete)} · ${escapar(p.entrega)}<br><strong>Total: ${reais(p.total)}</strong></p>
+     <h3>Enviar para</h3>
+     <p>${escapar(p.cliente_nome)}<br>${escapar(e.rua)}, ${escapar(e.numero)}${e.complemento ? ` · ${escapar(e.complemento)}` : ""}<br>
+     ${escapar(e.bairro)} · ${escapar(e.cidade)} - ${escapar(e.uf)} · CEP ${escapar(e.cep)}</p>
+     <p>WhatsApp: ${escapar(p.cliente_telefone)} · E-mail: ${escapar(p.cliente_email)}</p>
+     <p><a href="${SITE_URL}/painel/pedidos/${p.id}">Abrir no painel</a></p>`,
+  );
+}

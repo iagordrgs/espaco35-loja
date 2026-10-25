@@ -5,6 +5,7 @@ import { exigirUsuario } from "@/lib/supabase/server";
 
 export default async function EstoquePage() {
   const { supabase } = await exigirUsuario();
+  await supabase.rpc("cancelar_expirados");
   const { data, error } = await supabase.from("estoque").select("slug,status,reservado_ate,pedido_id");
   if (error) throw new Error(error.message);
 

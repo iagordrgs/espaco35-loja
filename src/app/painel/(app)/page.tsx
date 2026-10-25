@@ -53,6 +53,7 @@ function agrupar(pedidos: Pedido[], chave: (p: Pedido) => string[]): Barra[] {
 
 export default async function ResumoPage({ searchParams }: { searchParams: Promise<{ periodo?: string }> }) {
   const { supabase } = await exigirUsuario();
+  await supabase.rpc("cancelar_expirados");
   const { periodo: bruto } = await searchParams;
   const periodo: Periodo = bruto && bruto in PERIODOS ? (bruto as Periodo) : "30d";
   const dias = PERIODOS[periodo].dias;

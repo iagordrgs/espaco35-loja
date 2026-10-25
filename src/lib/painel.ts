@@ -35,6 +35,12 @@ export type Pedido = {
   entrega: string | null;
   vendedor: string | null;
   observacoes: string | null;
+  origem?: "painel" | "site";
+  cliente_email?: string | null;
+  endereco?: { cep?: string; rua?: string; numero?: string; complemento?: string; bairro?: string; cidade?: string; uf?: string } | null;
+  pagamento_id?: string | null;
+  pagamento_status?: string | null;
+  expira_em?: string | null;
 };
 
 export type LinhaEstoque = { slug: string; status: "disponivel" | "reservado" | "vendido"; reservado_ate: string | null; pedido_id: number | null };

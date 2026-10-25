@@ -40,6 +40,16 @@ create table if not exists public.pedidos (
   observacoes      text
 );
 
+-- Pedidos feitos e pagos pelo próprio site (Mercado Pago). Colunas novas: rodar o arquivo de novo cria só o que falta.
+alter table public.pedidos add column if not exists origem text not null default 'painel';      -- 'painel' ou 'site'
+alter table public.pedidos add column if not exists cliente_email text;
+alter table public.pedidos add column if not exists endereco jsonb;                              -- {cep, rua, numero, complemento, bairro, cidade, uf}
+alter table public.pedidos add column if not exists codigo_publico uuid not null default gen_random_uuid();
+alter table public.pedidos add column if not exists expira_em timestamptz;                       -- fim da reserva enquanto espera o pagamento
+alter table public.pedidos add column if not exists pagamento_id text;                           -- id do pagamento no Mercado Pago
+alter table public.pedidos add column if not exists pagamento_status text;                       -- approved, pending, rejected...
+create unique index if not exists pedidos_codigo_publico_idx on public.pedidos (codigo_publico);
+
 create index if not exists pedidos_criado_em_idx on public.pedidos (criado_em desc);
 create index if not exists pedidos_status_idx on public.pedidos (status);
 
@@ -64,12 +74,36 @@ create policy "pedidos painel" on public.pedidos
 
 -- ───────────── funções ─────────────
 
--- Par livre para vender: sem linha, disponível, ou reserva manual vencida.
+-- Par livre para vender: sem linha, disponível, ou reserva com prazo vencido
+-- (reserva manual do painel ou pedido do site que não foi pago a tempo; pedido do painel não tem prazo).
 create or replace function public.par_livre(e public.estoque)
 returns boolean language sql stable as $$
   select e.slug is null
       or e.status = 'disponivel'
-      or (e.status = 'reservado' and e.pedido_id is null and e.reservado_ate is not null and e.reservado_ate < now());
+      or (e.status = 'reservado' and e.reservado_ate is not null and e.reservado_ate < now());
+$$;
+
+-- Pedidos do site que passaram do prazo sem pagamento: cancela e devolve os pares ao estoque.
+create or replace function public.cancelar_expirados()
+returns integer
+language plpgsql
+security invoker
+set search_path = public
+as $$
+declare
+  qtd integer;
+begin
+  with vencidos as (
+    update pedidos set status = 'cancelado', atualizado_em = now()
+     where origem = 'site' and status = 'novo' and expira_em is not null and expira_em < now()
+    returning id
+  )
+  select count(*) into qtd from vencidos;
+  update estoque e set status = 'disponivel', pedido_id = null, reservado_ate = null, atualizado_em = now()
+   from pedidos p
+   where e.pedido_id = p.id and p.status = 'cancelado' and e.status = 'reservado';
+  return qtd;
+end;
 $$;
 
 -- Cria o pedido e segura os pares. Status 'novo' reserva; 'pago'/'enviado'/'entregue' já vende.
@@ -83,6 +117,8 @@ as $$
 declare
   novo_id    bigint;
   st         text := coalesce(dados->>'status', 'novo');
+  prazo      timestamptz := case when (dados->>'reservar_minutos') is not null
+                                 then now() + make_interval(mins => (dados->>'reservar_minutos')::int) end;
   slugs      text[];
   ocupados   text[];
 begin
@@ -90,6 +126,7 @@ begin
   if slugs is null or array_length(slugs, 1) = 0 then
     raise exception 'Pedido sem pares.';
   end if;
+  perform cancelar_expirados();
 
   -- garante uma linha por par e trava todas antes de conferir
   insert into estoque (slug) select unnest(slugs) on conflict (slug) do nothing;
@@ -102,16 +139,19 @@ begin
   end if;
 
   insert into pedidos (status, cliente_nome, cliente_telefone, cliente_cidade, itens,
-                       subtotal, desconto, frete, total, pagamento, entrega, vendedor, observacoes)
+                       subtotal, desconto, frete, total, pagamento, entrega, vendedor, observacoes,
+                       origem, cliente_email, endereco, expira_em)
   values (st, dados->>'cliente_nome', dados->>'cliente_telefone', dados->>'cliente_cidade', dados->'itens',
           coalesce((dados->>'subtotal')::numeric, 0), coalesce((dados->>'desconto')::numeric, 0),
           coalesce((dados->>'frete')::numeric, 0), coalesce((dados->>'total')::numeric, 0),
-          dados->>'pagamento', dados->>'entrega', dados->>'vendedor', dados->>'observacoes')
+          dados->>'pagamento', dados->>'entrega', dados->>'vendedor', dados->>'observacoes',
+          coalesce(dados->>'origem', 'painel'), dados->>'cliente_email', dados->'endereco',
+          case when st = 'novo' then prazo end)
   returning id into novo_id;
 
   update estoque
      set status = case when st = 'novo' then 'reservado' else 'vendido' end,
-         pedido_id = novo_id, reservado_ate = null, atualizado_em = now()
+         pedido_id = novo_id, reservado_ate = case when st = 'novo' then prazo end, atualizado_em = now()
    where slug = any(slugs);
 
   return novo_id;
@@ -184,7 +224,68 @@ begin
 end;
 $$;
 
+-- Pagamento do site aprovado (chamado pelo aviso do Mercado Pago, com a chave de serviço).
+-- Devolve 'ok', 'ja_pago' ou 'conflito' (o par foi para outra cliente depois que a reserva venceu: reembolsar).
+drop function if exists public.confirmar_pagamento(bigint, text);
+create or replace function public.confirmar_pagamento(pedido bigint, id_pagamento text)
+returns text
+language plpgsql
+security invoker
+set search_path = public
+as $$
+declare
+  ped   pedidos;
+  slugs text[];
+begin
+  select * into ped from pedidos where id = pedido for update;
+  if ped.id is null then raise exception 'Pedido % não encontrado.', pedido; end if;
+  if ped.status in ('pago', 'enviado', 'entregue') then return 'ja_pago'; end if;
+
+  select array_agg(item->>'slug') into slugs from jsonb_array_elements(ped.itens) item;
+  insert into estoque (slug) select unnest(slugs) on conflict (slug) do nothing;
+  perform 1 from estoque where slug = any(slugs) for update;
+  if exists (select 1 from estoque e where e.slug = any(slugs)
+              and e.pedido_id is distinct from pedido and not par_livre(e)) then
+    update pedidos set pagamento_id = id_pagamento, pagamento_status = 'approved', atualizado_em = now(),
+           observacoes = trim(both ' ' from coalesce(observacoes, '') || ' ATENÇÃO: pago depois que a reserva venceu e algum par já foi para outra cliente. Reembolsar ou oferecer troca.')
+     where id = pedido;
+    return 'conflito';
+  end if;
+
+  update pedidos set status = 'pago', pagamento_id = id_pagamento, pagamento_status = 'approved',
+         expira_em = null, atualizado_em = now()
+   where id = pedido;
+  update estoque set status = 'vendido', pedido_id = pedido, reservado_ate = null, atualizado_em = now()
+   where slug = any(slugs);
+  return 'ok';
+end;
+$$;
+
+-- Pagamento do site recusado/cancelado: cancela o pedido (se ainda não foi pago) e devolve os pares.
+create or replace function public.cancelar_pedido_site(pedido bigint, situacao text)
+returns void
+language plpgsql
+security invoker
+set search_path = public
+as $$
+begin
+  update pedidos set status = 'cancelado', pagamento_status = situacao, atualizado_em = now()
+   where id = pedido and origem = 'site' and status = 'novo';
+  if found then
+    update estoque set status = 'disponivel', pedido_id = null, reservado_ate = null, atualizado_em = now()
+     where pedido_id = pedido and status = 'reservado';
+  end if;
+end;
+$$;
+
 grant execute on function public.par_livre(public.estoque) to anon, authenticated;
+grant execute on function public.cancelar_expirados() to authenticated, service_role;
+grant execute on function public.criar_pedido(jsonb) to service_role;
+grant execute on function public.confirmar_pagamento(bigint, text) to service_role;
+grant execute on function public.cancelar_pedido_site(bigint, text) to service_role;
+revoke execute on function public.cancelar_expirados() from public, anon;
+revoke execute on function public.confirmar_pagamento(bigint, text) from public, anon, authenticated;
+revoke execute on function public.cancelar_pedido_site(bigint, text) from public, anon, authenticated;
 grant execute on function public.criar_pedido(jsonb) to authenticated;
 grant execute on function public.atualizar_pedido(bigint, text) to authenticated;
 grant execute on function public.definir_estoque(text, text, int) to authenticated;

@@ -35,7 +35,7 @@ export default async function PedidoPage({ params }: { params: Promise<{ id: str
       <header className="painel-cabecalho">
         <div>
           <h1>Pedido #{pedido.id}</h1>
-          <p>{dataHora(pedido.criado_em)}{pedido.vendedor ? ` · atendido por ${pedido.vendedor}` : ""}</p>
+          <p>{dataHora(pedido.criado_em)}{pedido.origem === "site" ? " · comprado pelo site" : pedido.vendedor ? ` · atendido por ${pedido.vendedor}` : ""}</p>
         </div>
         <span className={`painel-status status-${pedido.status} grande`}>{ROTULO_STATUS[pedido.status]}</span>
       </header>
@@ -64,9 +64,23 @@ export default async function PedidoPage({ params }: { params: Promise<{ id: str
           <h2>Cliente</h2>
           <p><strong>{pedido.cliente_nome}</strong></p>
           {pedido.cliente_telefone && <p>{pedido.cliente_telefone}{whats && <> · <a className="painel-link" href={whats} target="_blank" rel="noopener noreferrer">abrir conversa ↗</a></>}</p>}
-          {pedido.cliente_cidade && <p>{pedido.cliente_cidade}</p>}
+          {pedido.cliente_email && <p>{pedido.cliente_email}</p>}
+          {pedido.endereco ? (
+            <>
+              <h2>Enviar para</h2>
+              <p className="painel-obs">{`${pedido.endereco.rua ?? ""}, ${pedido.endereco.numero ?? ""}${pedido.endereco.complemento ? ` · ${pedido.endereco.complemento}` : ""}
+${pedido.endereco.bairro ?? ""} · ${pedido.endereco.cidade ?? ""} - ${pedido.endereco.uf ?? ""}
+CEP ${pedido.endereco.cep ?? ""}`}</p>
+            </>
+          ) : pedido.cliente_cidade && <p>{pedido.cliente_cidade}</p>}
           <h2>Pagamento e entrega</h2>
           <p>{pedido.pagamento || "—"} · {pedido.entrega || "—"}</p>
+          {pedido.origem === "site" && (
+            <p className="painel-sub">
+              {pedido.pagamento_id ? `Mercado Pago #${pedido.pagamento_id} · ${pedido.pagamento_status ?? ""}` : "Aguardando pagamento no Mercado Pago"}
+              {pedido.status === "novo" && pedido.expira_em ? ` · reserva até ${dataHora(pedido.expira_em)}` : ""}
+            </p>
+          )}
           {pedido.observacoes && <><h2>Observações</h2><p className="painel-obs">{pedido.observacoes}</p></>}
 
           <h2>Atualizar situação</h2>
