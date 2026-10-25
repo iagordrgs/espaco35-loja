@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { revalidateTag } from "next/cache";
 import { getProduct } from "@/data/products";
 import { TAG_ESTOQUE } from "@/lib/estoque";
@@ -7,6 +8,14 @@ import { SITE_URL } from "@/lib/site";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
 const RESERVA_MINUTOS = 30;
+const MAX_PARES = 5; // mais que isso no site vira conversa com a equipe (e o atacado é pelo WhatsApp)
+const MAX_RESERVAS_POR_IP = 2; // freia quem tenta travar o estoque criando pedidos sem pagar
+
+// Só o hash do IP vai para o banco, nunca o IP em si.
+function hashIp(request: Request) {
+  const ip = (request.headers.get("x-forwarded-for") ?? "").split(",")[0].trim() || request.headers.get("x-real-ip") || "sem-ip";
+  return createHash("sha256").update(`${ip}|${process.env.SUPABASE_SERVICE_ROLE_KEY ?? ""}`).digest("hex").slice(0, 32);
+}
 const texto = (v: unknown, max = 120) => (typeof v === "string" ? v.trim().slice(0, max) : "");
 const erro = (mensagem: string, status = 400) => Response.json({ erro: mensagem }, { status });
 
@@ -18,7 +27,8 @@ export async function POST(request: Request) {
   if (!pagamentoOnlineAtivo() || !admin) return erro("Pagamento online ainda não está ativo. Finalize pelo WhatsApp.", 503);
 
   const corpo = await request.json().catch(() => null);
-  const slugs: string[] = [...new Set<string>(Array.isArray(corpo?.slugs) ? corpo.slugs.filter((s: unknown) => typeof s === "string") : [])].slice(0, 30);
+  const slugs: string[] = [...new Set<string>(Array.isArray(corpo?.slugs) ? corpo.slugs.filter((s: unknown) => typeof s === "string") : [])];
+  if (slugs.length > MAX_PARES) return erro(`Pelo site dá para pagar até ${MAX_PARES} pares por pedido. Para mais, finalize pelo WhatsApp.`);
   const pares = slugs.map((s) => getProduct(s)).filter((p) => p !== undefined);
   if (pares.length === 0 || pares.length !== slugs.length) return erro("Sua sacola mudou. Volte à sacola e confira os pares.");
 
@@ -31,6 +41,21 @@ export async function POST(request: Request) {
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return erro("Informe um e-mail válido.");
   if (telefone.replace(/\D/g, "").length < 10) return erro("Informe seu WhatsApp com DDD.");
   if (!numero) return erro("Informe o número do endereço.");
+
+  // Limites contra quem quer travar o estoque sem pagar: no máximo 2 reservas abertas por aparelho/rede.
+  // A mesma cliente (e-mail ou WhatsApp) tentando de novo: a reserva anterior é cancelada e os pares voltam.
+  const ipHash = hashIp(request);
+  await admin.rpc("cancelar_expirados");
+  const { data: abertos } = await admin.from("pedidos").select("id,cliente_email,cliente_telefone,cliente_ip_hash")
+    .eq("origem", "site").eq("status", "novo").gt("expira_em", new Date().toISOString());
+  const digitos = telefone.replace(/\D/g, "");
+  for (const p of abertos ?? []) {
+    if (p.cliente_email?.toLowerCase() === email.toLowerCase() || (p.cliente_telefone ?? "").replace(/\D/g, "") === digitos) {
+      await admin.rpc("cancelar_pedido_site", { pedido: p.id, situacao: "substituido" });
+    }
+  }
+  const doMesmoIp = (abertos ?? []).filter((p) => p.cliente_ip_hash === ipHash && p.cliente_email?.toLowerCase() !== email.toLowerCase()).length;
+  if (doMesmoIp >= MAX_RESERVAS_POR_IP) return erro("Já existem pedidos aguardando pagamento a partir desta conexão. Conclua um deles ou fale com a equipe pelo WhatsApp.", 429);
 
   const cotacao = await cotarFrete(soDigitos(texto(corpo?.endereco?.cep, 12)), pares.map((p) => p.price ?? 0));
   if (!cotacao.endereco) return erro(cotacao.aviso ?? "CEP inválido.");
@@ -66,6 +91,7 @@ export async function POST(request: Request) {
       pagamento: "Mercado Pago (Pix ou cartão)",
       entrega: `${frete.nome} · ${frete.prazo}`,
       vendedor: "Site",
+      cliente_ip_hash: ipHash,
     },
   });
   if (error) {

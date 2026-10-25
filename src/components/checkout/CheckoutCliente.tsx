@@ -55,7 +55,8 @@ export default function CheckoutCliente({ pagamentoOnline, freteFortaleza }: { p
           : "Vamos abrir uma conversa com a loja e preencher uma mensagem com os pares escolhidos. Você só conclui o pedido quando tocar em enviar no WhatsApp."}</p>
       </div>
       {unavailable.length > 0 && <div style={{ marginTop: 18 }}><AvisoIndisponiveis /></div>}
-      {pagamentoOnline && <PagamentoOnline products={products} freteFortaleza={freteFortaleza} />}
+      {pagamentoOnline && products.length <= 5 && <PagamentoOnline products={products} freteFortaleza={freteFortaleza} />}
+      {pagamentoOnline && products.length > 5 && <p className="checkout-aviso">Pelo site dá para pagar até 5 pares por pedido. Para levar mais, finalize com a equipe pelo WhatsApp (a partir de 6 peças vale o preço de atacado).</p>}
       <section className="checkout-card">
         <h2>{pagamentoOnline ? "Prefere finalizar pelo WhatsApp?" : "Confira seu pedido"}</h2>
         <ul className="checkout-items">

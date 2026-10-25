@@ -46,13 +46,14 @@ export function criarPreferencia(corpo: {
       expiration_date_from: new Date().toISOString(),
       date_of_expiration: body.expiration_date_to, // Pix/boleto vencem junto com a reserva dos pares
       statement_descriptor: "ESPACO35",
-      payment_methods: { installments: 6 },
+      // sem boleto/lotérica: compensam em 1 a 3 dias, depois da reserva de 30 min (o par poderia ter ido para outra cliente)
+      payment_methods: { installments: 6, excluded_payment_types: [{ id: "ticket" }, { id: "atm" }] },
     }),
   });
 }
 
 export function buscarPagamento(id: string) {
-  return chamar<{ id: number; status: string; status_detail?: string; external_reference?: string; transaction_amount?: number }>(
+  return chamar<{ id: number; status: string; status_detail?: string; external_reference?: string; transaction_amount?: number; currency_id?: string }>(
     `/v1/payments/${encodeURIComponent(id)}`,
   );
 }

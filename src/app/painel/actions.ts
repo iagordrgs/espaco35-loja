@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { ATACADO_MINIMO, getProduct } from "@/data/products";
 import { PRECO_ATACADO } from "@/lib/atacado";
 import { TAG_ESTOQUE } from "@/lib/estoque";
-import { exigirUsuario, supabaseServidor } from "@/lib/supabase/server";
+import { estaNaEquipe, exigirUsuario, supabaseServidor } from "@/lib/supabase/server";
 import { STATUS_PEDIDO, type StatusPedido } from "@/lib/painel";
 
 export type EstadoForm = { erro?: string };
@@ -29,6 +29,11 @@ export async function entrar(_estado: EstadoForm, form: FormData): Promise<Estad
     password: String(form.get("senha") ?? ""),
   });
   if (error) return { erro: "E-mail ou senha incorretos." };
+  const { data } = await supabase.auth.getUser();
+  if (!data.user || !(await estaNaEquipe(supabase, data.user.id))) {
+    await supabase.auth.signOut();
+    return { erro: "Este usuário não tem acesso ao painel. Peça para a loja incluir você na equipe." };
+  }
   redirect("/painel");
 }
 

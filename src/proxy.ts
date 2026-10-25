@@ -26,7 +26,9 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL("/painel/login", request.url));
   }
   if (data.user && naTelaDeLogin) {
-    return NextResponse.redirect(new URL("/painel", request.url));
+    // só pula o login quem é da equipe; quem não é fica no login (senão o painel e o login se redirecionam sem fim)
+    const { data: membro } = await supabase.from("equipe").select("user_id").eq("user_id", data.user.id).maybeSingle();
+    if (membro) return NextResponse.redirect(new URL("/painel", request.url));
   }
   return resposta;
 }

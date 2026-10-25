@@ -1,10 +1,11 @@
 "use client";
 
-import { startTransition, useActionState, type FormEvent } from "react";
-import { entrar, type EstadoForm } from "@/app/painel/actions";
+import { startTransition, use, useActionState, type FormEvent } from "react";
+import { entrar, sair, type EstadoForm } from "@/app/painel/actions";
 
-export default function LoginPage() {
-  const [estado, acao, enviando] = useActionState<EstadoForm, FormData>(entrar, {});
+export default function LoginPage({ searchParams }: { searchParams: Promise<{ acesso?: string }> }) {
+  const negado = use(searchParams).acesso === "negado";
+  const [estado, acao, enviando] = useActionState<EstadoForm, FormData>(entrar, negado ? { erro: "Este usuário não tem acesso ao painel. Entre com uma conta da equipe." } : {});
   // envio manual: com action={...} o React limpa os campos depois de um erro
   const enviar = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -22,6 +23,7 @@ export default function LoginPage() {
         <label>Senha<input name="senha" type="password" autoComplete="current-password" required /></label>
         {estado.erro && <p className="painel-erro" role="alert">{estado.erro}</p>}
         <button type="submit" className="button button-dark" disabled={enviando}>{enviando ? "Entrando..." : "Entrar"}</button>
+        {negado && <button type="button" className="painel-botao" onClick={() => startTransition(() => sair())}>Sair da conta atual</button>}
       </form>
     </div>
   );

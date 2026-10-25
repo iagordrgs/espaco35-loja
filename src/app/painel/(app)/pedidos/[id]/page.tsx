@@ -85,7 +85,10 @@ CEP ${pedido.endereco.cep ?? ""}`}</p>
 
           <h2>Atualizar situação</h2>
           <div className="painel-acoes coluna">
-            {PROXIMOS[pedido.status].map((s) => (
+            {pedido.origem === "site" && pedido.pagamento_status !== "approved" && pedido.status !== "cancelado" && (
+              <p className="painel-erro">Pedido do site sem pagamento aprovado no Mercado Pago: não envie.</p>
+            )}
+            {PROXIMOS[pedido.status].filter((s) => !(pedido.origem === "site" && pedido.pagamento_status !== "approved" && ["pago", "enviado", "entregue"].includes(s))).map((s) => (
               <form key={s} action={atualizarPedido}>
                 <input type="hidden" name="id" value={pedido.id} />
                 <input type="hidden" name="status" value={s} />

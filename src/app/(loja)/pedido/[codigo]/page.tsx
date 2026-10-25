@@ -19,20 +19,25 @@ export default async function PedidoPage({ params, searchParams }: { params: Pro
   const { data: p } = await admin.from("pedidos").select("id,status,itens,frete,total,entrega,pagamento_status").eq("codigo_publico", codigo).maybeSingle();
   if (!p) notFound();
 
+  // A situação vem só do banco (atualizado pelo aviso assinado do Mercado Pago). O status no endereço da volta
+  // (collection_status) pode ser editado por qualquer um: serve só para mostrar "confirmando" enquanto o aviso chega.
   const retorno = collection_status ?? voltaStatus;
-  const pago = ["pago", "enviado", "entregue"].includes(p.status) || retorno === "approved";
-  const aguardando = !pago && p.status === "novo" && (retorno === "pending" || retorno === "in_process" || p.pagamento_status === "pending" || !retorno);
+  const pago = ["pago", "enviado", "entregue"].includes(p.status);
+  const aguardando = !pago && p.status === "novo";
+  const confirmando = aguardando && retorno === "approved";
   const ajuda = linkWhatsApp(`Olá! Fiz o pedido #${p.id} pelo site e queria falar sobre ele.`);
 
   return (
     <main className="page-center pedido-retorno">
       {(pago || aguardando) && <LimparSacola />}
       <span className="empty-mark" aria-hidden="true">{pago ? "✓" : aguardando ? "…" : "!"}</span>
-      <h1>{pago ? "Pagamento aprovado!" : aguardando ? "Aguardando o pagamento" : "O pagamento não foi concluído"}</h1>
+      <h1>{pago ? "Pagamento aprovado!" : confirmando ? "Confirmando o pagamento…" : aguardando ? "Aguardando o pagamento" : "O pagamento não foi concluído"}</h1>
       <p>
         {pago
           ? `Recebemos seu pedido #${p.id}. A equipe da Espaço 35 já foi avisada e vai separar seus pares para envio. Você recebe o acompanhamento pelo WhatsApp.`
-          : aguardando
+          : confirmando
+            ? `O Mercado Pago está confirmando o pagamento do pedido #${p.id}. Isso leva alguns segundos: atualize esta página.`
+            : aguardando
             ? `Seu pedido #${p.id} está reservado por 30 minutos. Se pagou com Pix, a confirmação chega em instantes: atualize esta página.`
             : `Os pares do pedido #${p.id} voltaram para a loja. Você pode tentar de novo ou finalizar com a nossa equipe pelo WhatsApp.`}
       </p>

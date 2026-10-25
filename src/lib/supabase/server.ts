@@ -21,10 +21,18 @@ export async function supabaseServidor() {
   });
 }
 
-// Garante que há alguém logado. Usado em toda página e ação do painel (o proxy é só a primeira barreira).
+// Está na lista da equipe (tabela public.equipe)? Ter conta no Supabase não basta para usar o painel.
+export async function estaNaEquipe(supabase: Awaited<ReturnType<typeof supabaseServidor>>, userId: string) {
+  const { data } = await supabase.from("equipe").select("user_id").eq("user_id", userId).maybeSingle();
+  return Boolean(data);
+}
+
+// Garante que há alguém logado E da equipe. Usado em toda página e ação do painel (o proxy é só a primeira barreira;
+// o banco confere de novo em cada leitura e gravação).
 export async function exigirUsuario() {
   const supabase = await supabaseServidor();
   const { data } = await supabase.auth.getUser();
   if (!data.user) redirect("/painel/login");
+  if (!(await estaNaEquipe(supabase, data.user.id))) redirect("/painel/login?acesso=negado");
   return { supabase, usuario: data.user };
 }

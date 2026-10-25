@@ -6,7 +6,9 @@ import { reais, type ItemPedido } from "@/lib/painel";
 import { SITE_URL } from "@/lib/site";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
-const RECUSADOS = ["rejected", "cancelled", "refunded", "charged_back"];
+// Antes de pagar: cancela o pedido e devolve os pares. Depois de pago: marca "NÃO ENVIAR" e avisa a equipe.
+const RECUSADOS = ["rejected", "cancelled"];
+const ESTORNOS = ["refunded", "charged_back", "in_mediation"];
 
 // Aviso do Mercado Pago sobre um pagamento. Confere a assinatura, busca o pagamento na API (nunca confia no corpo)
 // e atualiza o pedido: aprovado -> pago + e-mail para a equipe; recusado -> cancelado e pares de volta ao site.
@@ -29,11 +31,17 @@ export async function POST(request: Request) {
   if (!idPedido) return new Response("ok");
 
   if (pagamento.status === "approved") {
-    const { data: resultado, error } = await admin.rpc("confirmar_pagamento", { pedido: idPedido, id_pagamento: String(pagamento.id) });
+    // o banco confere se o valor cobre o total do pedido; moeda diferente de real conta como valor inválido
+    const valor = pagamento.currency_id === "BRL" ? Number(pagamento.transaction_amount) : null;
+    const { data: resultado, error } = await admin.rpc("confirmar_pagamento", { pedido: idPedido, id_pagamento: String(pagamento.id), valor });
     if (error) return new Response("erro ao confirmar", { status: 500 }); // o Mercado Pago tenta de novo
-    if (resultado !== "ja_pago") await enviarAviso(idPedido, resultado === "conflito");
+    if (resultado !== "ja_pago") await enviarAviso(idPedido, resultado === "conflito" ? "conferir" : "pago");
   } else if (RECUSADOS.includes(pagamento.status)) {
     await admin.rpc("cancelar_pedido_site", { pedido: idPedido, situacao: pagamento.status });
+  } else if (ESTORNOS.includes(pagamento.status)) {
+    const { data: antes } = await admin.rpc("registrar_estorno", { pedido: idPedido, situacao: pagamento.status });
+    if (antes) await enviarAviso(idPedido, "estorno", pagamento.status);
+    else if (pagamento.status !== "in_mediation") await admin.rpc("cancelar_pedido_site", { pedido: idPedido, situacao: pagamento.status });
   } else {
     await admin.from("pedidos").update({ pagamento_status: pagamento.status, pagamento_id: String(pagamento.id) }).eq("id", idPedido).eq("status", "novo");
   }
@@ -43,16 +51,26 @@ export async function POST(request: Request) {
   return new Response("ok");
 }
 
-async function enviarAviso(idPedido: number, conflito: boolean) {
+async function enviarAviso(idPedido: number, tipo: "pago" | "conferir" | "estorno", situacao?: string) {
   const admin = supabaseAdmin();
   const { data: p } = await admin!.from("pedidos").select("*").eq("id", idPedido).single();
   if (!p) return;
   const e = p.endereco ?? {};
   const itens = (p.itens as ItemPedido[]).map((i) => `<li>${escapar(i.nome)} (${escapar(i.codigo)}) · ${reais(i.preco)}</li>`).join("");
+  const assunto = {
+    pago: `Novo pedido pago #${p.id} · ${p.cliente_nome} · ${reais(p.total)}`,
+    conferir: `⚠️ CONFERIR pedido #${p.id} antes de enviar · ${p.cliente_nome}`,
+    estorno: `⛔ NÃO ENVIAR pedido #${p.id}: pagamento ${situacao} no Mercado Pago`,
+  }[tipo];
+  const alerta = {
+    pago: "",
+    conferir: `<p><strong>Atenção:</strong> ${escapar(p.observacoes)} O pedido não foi marcado como pago.</p>`,
+    estorno: `<p><strong>NÃO ENVIAR.</strong> O pagamento ficou "${escapar(situacao)}" no Mercado Pago (estorno, devolução ou disputa). Se já foi enviado, responda a disputa no Mercado Pago com o código de rastreio.</p>`,
+  }[tipo];
   await avisarEquipe(
-    `${conflito ? "⚠️ CONFERIR " : ""}Novo pedido pago #${p.id} · ${p.cliente_nome} · ${reais(p.total)}`,
-    `<h2>Pedido #${p.id} pago pelo site</h2>
-     ${conflito ? "<p><strong>Atenção:</strong> o pagamento chegou depois que a reserva venceu e algum par já foi para outra cliente. Combine reembolso ou troca.</p>" : ""}
+    assunto,
+    `<h2>Pedido #${p.id} · site</h2>
+     ${alerta}
      <ul>${itens}</ul>
      <p>Frete: ${reais(p.frete)} · ${escapar(p.entrega)}<br><strong>Total: ${reais(p.total)}</strong></p>
      <h3>Enviar para</h3>
