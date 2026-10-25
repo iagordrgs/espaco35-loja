@@ -11,7 +11,8 @@ export async function getEstoque(): Promise<MapaEstoque> {
   if (!supabaseConfigurado) return {};
   try {
     const resposta = await fetch(`${SUPABASE_URL}/rest/v1/estoque?select=slug,status,reservado_ate&status=neq.disponivel`, {
-      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
+      // só "apikey": funciona com a chave antiga (anon) e com a nova (sb_publishable_...), que não pode ir no Authorization
+      headers: { apikey: SUPABASE_KEY },
       next: { revalidate: 60, tags: [TAG_ESTOQUE] },
     });
     if (!resposta.ok) return {};
