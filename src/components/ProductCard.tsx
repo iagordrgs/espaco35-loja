@@ -23,7 +23,7 @@ export default function ProductCard({ product, reveal = true }: { product: Produ
 
   return (
     <Reveal className="product-card" disabled={!reveal}>
-      <div className="product-media">
+      <div className={`product-media${product.soldOut ? " is-sold" : ""}`}>
         <Link href={`/produtos/${product.slug}`} className="product-image-link" aria-label={`Ver ${product.name}`}>
           <Image
             src={product.images[0]}
@@ -32,7 +32,7 @@ export default function ProductCard({ product, reveal = true }: { product: Produ
             sizes="(max-width: 720px) 46vw, (max-width: 1000px) 30vw, 23vw"
           />
         </Link>
-        {product.soldOut ? <span className="product-badge sold">Vendido</span> : product.reserved ? <span className="product-badge sold">Reservado</span> : product.lastUnits ? <span className="product-badge">Último par</span> : null}
+        {product.soldOut ? <span className="sold-band">Esgotado</span> : product.reserved ? <span className="product-badge sold">Reservado</span> : product.lastUnits ? <span className="product-badge">Último par</span> : null}
         <button
           type="button"
           onClick={() => toggle(product.slug)}
@@ -53,7 +53,7 @@ export default function ProductCard({ product, reveal = true }: { product: Produ
         </span>
         {available ? (
           added ? <Link href="/carrinho" className="quick-add is-added"><span aria-hidden="true">✓</span> Na sacola</Link> : <button type="button" onClick={addProduct} className="quick-add">Adicionar à sacola</button>
-        ) : <button type="button" className="quick-add" disabled>Par vendido</button>}
+        ) : <button type="button" className="quick-add" disabled>{product.soldOut ? "Esgotado" : "Par reservado"}</button>}
         <span className="screen-reader-only" role="status" aria-live="polite">{notice}</span>
       </div>
     </Reveal>

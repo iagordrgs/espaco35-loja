@@ -130,6 +130,10 @@ button { color: inherit; }
 .product-card:hover .product-image-link img { transform: scale(1.045); }
 .product-badge { position: absolute; top: 12px; left: 12px; z-index: 2; min-height: 24px; display: inline-flex; align-items: center; padding: 0 9px; background: #fff; color: #111; font-size: 8px; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; }
 .product-badge.sold { background: #111; color: #fff; }
+/* par esgotado: foto sem cor e faixa atravessando a imagem */
+.is-sold img { filter: grayscale(1); opacity: .55; }
+.sold-band { position: absolute; left: -12%; right: -12%; top: 50%; z-index: 3; transform: translateY(-50%) rotate(-12deg); padding: 9px 0; background: rgba(17, 17, 17, .88); color: #fff; text-align: center; font-size: 13px; font-weight: 800; letter-spacing: .32em; text-transform: uppercase; pointer-events: none; }
+.product-gallery-main .sold-band { padding: 14px 0; font-size: 20px; }
 .favorite-toggle { position: absolute; top: 9px; right: 9px; z-index: 3; display: grid; place-items: center; width: 40px; height: 40px; border: 0; border-radius: 50%; background: #fff; color: #222; cursor: pointer; transition: color .2s, transform .2s; }
 .favorite-toggle:hover { color: var(--brand); transform: scale(1.06); }
 .favorite-toggle svg { width: 19px; height: 19px; }

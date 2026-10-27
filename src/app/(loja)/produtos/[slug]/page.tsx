@@ -44,7 +44,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
         <Link href="/">Início</Link> <span aria-hidden="true">/</span> <Link href="/produtos">Coleção</Link> <span aria-hidden="true">/</span> <span>{product.name}</span>
       </nav>
       <div className="detail-grid">
-        <ProductGallery images={product.images} alt={product.name} />
+        <ProductGallery images={product.images} alt={product.name} esgotado={product.soldOut} />
         <div className="detail-info">
           <div className="detail-brandline"><span>{product.brand}</span><span className="detail-code">Cód. {product.code}</span></div>
           <h1 className="detail-title">{product.name}</h1>

@@ -6,9 +6,11 @@ import Image from "next/image";
 export default function ProductGallery({
   images,
   alt,
+  esgotado = false,
 }: {
   images: string[];
   alt: string;
+  esgotado?: boolean;
 }) {
   const [i, setI] = useState(0);
   const [zoom, setZoom] = useState(false);
@@ -55,7 +57,8 @@ export default function ProductGallery({
   return (
     <div>
       {/* imagem principal */}
-      <div className="product-gallery-main">
+      <div className={`product-gallery-main${esgotado ? " is-sold" : ""}`}>
+        {esgotado && <span className="sold-band">Esgotado</span>}
         <button
           type="button"
           ref={triggerRef}

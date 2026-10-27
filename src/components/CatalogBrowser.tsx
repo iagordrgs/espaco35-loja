@@ -10,7 +10,7 @@ export default function CatalogBrowser({ products }: { products: Product[] }) {
   const [query, setQuery] = useState("");
   const [brand, setBrand] = useState("all");
   const [sort, setSort] = useState("featured");
-  const [availability, setAvailability] = useState("available");
+  const [availability, setAvailability] = useState("all");
   const [savedOnly, setSavedOnly] = useState(false);
 
   const brands = useMemo(() => [...new Set(products.map((product) => product.brand))].sort(), [products]);
@@ -27,16 +27,17 @@ export default function CatalogBrowser({ products }: { products: Product[] }) {
     if (sort === "price-asc") result.sort((a, b) => (a.price ?? Number.POSITIVE_INFINITY) - (b.price ?? Number.POSITIVE_INFINITY));
     if (sort === "price-desc") result.sort((a, b) => (b.price ?? -1) - (a.price ?? -1));
     if (sort === "newest") result.sort((a, b) => b.code.localeCompare(a.code));
-    return result;
+    // em qualquer ordenação, par esgotado fica no fim da fila
+    return result.sort((a, b) => Number(!isAvailable(a)) - Number(!isAvailable(b)));
   }, [availability, brand, isFavorite, products, query, savedOnly, sort]);
 
-  const hasFilters = Boolean(query || brand !== "all" || sort !== "featured" || availability !== "available" || savedOnly);
+  const hasFilters = Boolean(query || brand !== "all" || sort !== "featured" || availability !== "all" || savedOnly);
 
   function clearFilters() {
     setQuery("");
     setBrand("all");
     setSort("featured");
-    setAvailability("available");
+    setAvailability("all");
     setSavedOnly(false);
   }
 
@@ -70,7 +71,7 @@ export default function CatalogBrowser({ products }: { products: Product[] }) {
       <div className="filter-row" aria-label="Filtros de produto">
         <span className="filter-label">Mostrar:</span>
         <button type="button" className={`filter-chip${availability === "available" ? " active" : ""}`} onClick={() => setAvailability("available")} aria-pressed={availability === "available"}>À venda</button>
-        <button type="button" className={`filter-chip${availability === "sold" ? " active" : ""}`} onClick={() => setAvailability("sold")} aria-pressed={availability === "sold"}>Vendidos</button>
+        <button type="button" className={`filter-chip${availability === "sold" ? " active" : ""}`} onClick={() => setAvailability("sold")} aria-pressed={availability === "sold"}>Esgotados</button>
         <button type="button" className={`filter-chip${availability === "all" ? " active" : ""}`} onClick={() => setAvailability("all")} aria-pressed={availability === "all"}>Todos os pares</button>
         <button type="button" className={`filter-chip${savedOnly ? " active" : ""}`} onClick={() => setSavedOnly((value) => !value)} aria-pressed={savedOnly}>♡ Salvos</button>
         {hasFilters && <button type="button" className="clear-filters" onClick={clearFilters}>Limpar filtros</button>}
