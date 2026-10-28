@@ -1,11 +1,12 @@
 import "server-only";
 
-// Frete do site: Fortaleza com valor fixo (motoboy); resto do Brasil cotado pelo CEP no Melhor Envio.
+// Frete do site: Fortaleza com valor fixo (Uber Flash / 99 Entrega chamado na hora) ou retirada grátis combinada
+// com a equipe; resto do Brasil cotado pelo CEP no Melhor Envio.
 // Variáveis (Vercel > Settings > Environment Variables):
 //   LOJA_CEP_ORIGEM     CEP de onde os pares saem em Fortaleza
 //   MELHORENVIO_TOKEN   token do Melhor Envio (Integrações > Permissões de acesso)
 //   MELHORENVIO_SANDBOX "1" para usar o ambiente de testes do Melhor Envio
-export const FRETE_FORTALEZA = 10;
+export const FRETE_FORTALEZA = 15; // a corrida varia (R$ 8 a 20); a diferença sai da margem do par
 
 // Caixa de um par de sapato (cm/kg). Ajuste se as caixas forem maiores.
 const CAIXA = { largura: 22, altura: 13, comprimento: 33, peso: 0.9 };
@@ -94,7 +95,13 @@ export async function cotarFrete(cep: string, valores: number[]): Promise<Cotaca
   const endereco = await buscarEndereco(cep);
   if (!endereco) return { endereco: null, opcoes: [], aviso: "CEP não encontrado. Confira os números." };
   if (ehFortaleza(endereco)) {
-    return { endereco, opcoes: [{ id: "fortaleza", nome: "Entrega em Fortaleza (motoboy)", preco: FRETE_FORTALEZA, prazo: "até 2 dias úteis" }] };
+    return {
+      endereco,
+      opcoes: [
+        { id: "fortaleza", nome: "Entrega em Fortaleza (motoboy)", preco: FRETE_FORTALEZA, prazo: "até 2 dias úteis" },
+        { id: "retirada", nome: "Retirar com a equipe (grátis)", preco: 0, prazo: "combinamos dia, hora e local pelo WhatsApp" },
+      ],
+    };
   }
   const opcoes = await cotarMelhorEnvio(endereco.cep, valores);
   if (!opcoes || opcoes.length === 0) {

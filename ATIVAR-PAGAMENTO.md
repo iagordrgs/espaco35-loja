@@ -35,7 +35,7 @@ faça uma compra, confira o pedido no painel e só então troque pelas credencia
 2. **Integrações > Permissões de acesso > Gerar token** (marque a permissão de cálculo de frete) → `MELHORENVIO_TOKEN`.
 3. `LOJA_CEP_ORIGEM` = CEP de onde os pares saem em Fortaleza (só números).
 
-Fortaleza não usa o Melhor Envio: é sempre R$ 10,00 (motoboy). Para mudar, edite `FRETE_FORTALEZA` em `src/lib/frete.ts`.
+Fortaleza não usa o Melhor Envio: é sempre R$ 15,00 (Uber Flash / 99 Entrega) ou retirada grátis. Para mudar, edite `FRETE_FORTALEZA` em `src/lib/frete.ts`.
 As medidas da caixa (33 × 22 × 13 cm, 0,9 kg) ficam no mesmo arquivo; ajuste se as caixas forem maiores.
 
 ## 4. Aviso por e-mail para a equipe (opcional, recomendado)
@@ -55,7 +55,7 @@ Vercel > projeto **espaco35-loja** > **Settings > Environment Variables**: cadas
 
 ## Como funciona depois de ativo
 
-1. A cliente informa o CEP: o endereço é preenchido e o frete aparece (Fortaleza R$ 10; Brasil pelo Melhor Envio).
+1. A cliente informa o CEP: o endereço é preenchido e o frete aparece (Fortaleza R$ 15 ou retirada grátis; Brasil pelo Melhor Envio).
 2. Ao clicar em pagar, os pares ficam **reservados por 30 minutos** e somem do site; o Pix vence junto.
 3. Pagamento aprovado: o pedido vira **Pago** no painel, os pares ficam **Vendidos** e a equipe recebe o e-mail
    com itens e endereço para enviar.
