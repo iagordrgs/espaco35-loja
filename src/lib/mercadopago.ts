@@ -64,6 +64,14 @@ export function buscarPagamento(id: string) {
   );
 }
 
+// Cancela um pagamento ainda pendente (Pix gerado e não pago): usado quando outra cliente levou o par antes.
+export function cancelarPagamento(id: string) {
+  return chamar<{ id: number; status: string }>(`/v1/payments/${encodeURIComponent(id)}`, {
+    method: "PUT",
+    body: JSON.stringify({ status: "cancelled" }),
+  });
+}
+
 // Confere se o aviso veio mesmo do Mercado Pago (assinatura HMAC no cabeçalho x-signature), pelo SDK oficial.
 export function assinaturaValida(xSignature: string | null, xRequestId: string | null, dataId: string | null): boolean {
   const secret = process.env.MERCADOPAGO_WEBHOOK_SECRET;

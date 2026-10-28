@@ -128,7 +128,7 @@ export default function PagamentoOnline({ products, freteFortaleza }: { products
       <button type="submit" className="button button-red" disabled={enviando || !frete}>
         {enviando ? "Abrindo o pagamento…" : "Pagar com Pix ou cartão"} <span aria-hidden="true">↗</span>
       </button>
-      <p className="checkout-hint">Seus pares ficam reservados por 30 minutos enquanto você paga.</p>
+      <p className="checkout-hint">O par fica reservado para você assim que o Pix é gerado ou o cartão enviado, por até 30 minutos. Até lá, continua à venda.</p>
     </form>
   );
 }

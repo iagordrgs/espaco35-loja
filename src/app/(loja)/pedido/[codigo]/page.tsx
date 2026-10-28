@@ -25,6 +25,8 @@ export default async function PedidoPage({ params, searchParams }: { params: Pro
   const pago = ["pago", "enviado", "entregue"].includes(p.status);
   const aguardando = !pago && p.status === "novo";
   const confirmando = aguardando && retorno === "approved";
+  const pixGerado = aguardando && ["pending", "in_process", "authorized"].includes(p.pagamento_status ?? "");
+  const perdeuPar = p.status === "cancelado" && p.pagamento_status === "par_indisponivel";
   const ajuda = linkWhatsApp(`Olá! Fiz o pedido #${p.id} pelo site e queria falar sobre ele.`);
 
   return (
@@ -37,8 +39,12 @@ export default async function PedidoPage({ params, searchParams }: { params: Pro
           ? `Recebemos seu pedido #${p.id}. A equipe da Espaço 35 já foi avisada e vai separar seus pares para envio. Você recebe o acompanhamento pelo WhatsApp.`
           : confirmando
             ? `O Mercado Pago está confirmando o pagamento do pedido #${p.id}. Isso leva alguns segundos: atualize esta página.`
+            : pixGerado
+            ? `Seu par está reservado para você. Pague o Pix (ou aguarde a análise do cartão) em até 30 minutos: a confirmação chega em instantes, atualize esta página.`
             : aguardando
-            ? `Seu pedido #${p.id} está reservado por 30 minutos. Se pagou com Pix, a confirmação chega em instantes: atualize esta página.`
+            ? `Seu pedido #${p.id} vale por 30 minutos. O par só fica reservado para você quando o Pix é gerado ou o cartão enviado no Mercado Pago.`
+            : perdeuPar
+            ? `Outra cliente garantiu o par segundos antes de você. Como cada modelo tem um par só, o pedido #${p.id} foi cancelado e nada foi cobrado.`
             : `Os pares do pedido #${p.id} voltaram para a loja. Você pode tentar de novo ou finalizar com a nossa equipe pelo WhatsApp.`}
       </p>
       <ul className="pedido-resumo">

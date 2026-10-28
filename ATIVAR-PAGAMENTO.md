@@ -56,9 +56,11 @@ Vercel > projeto **espaco35-loja** > **Settings > Environment Variables**: cadas
 ## Como funciona depois de ativo
 
 1. A cliente informa o CEP: o endereço é preenchido e o frete aparece (Fortaleza R$ 15 ou retirada grátis; Brasil pelo Melhor Envio).
-2. Ao clicar em pagar, os pares ficam **reservados por 30 minutos** e somem do site; o Pix vence junto.
+2. Ao clicar em pagar, o pedido vale **30 minutos**, mas os pares **continuam à venda**: só ficam reservados (e somem do site)
+   quando o Mercado Pago avisa que a cliente gerou o Pix ou enviou o cartão. O Pix vence junto com o pedido.
+   Se duas clientes gerarem o Pix do mesmo par, a segunda tem o pagamento cancelado no Mercado Pago e vê o aviso no site.
 3. Pagamento aprovado: o pedido vira **Pago** no painel, os pares ficam **Vendidos** e a equipe recebe o e-mail
    com itens e endereço para enviar.
-4. Pagamento recusado ou não feito em 30 minutos: o pedido é cancelado e os pares voltam ao site sozinhos.
+4. Pagamento recusado ou não feito em 30 minutos: o pedido é cancelado e os pares (se chegaram a ser reservados) voltam ao site sozinhos.
 5. Caso raro: se um Pix for pago depois da reserva vencer e o par já tiver ido para outra cliente, o pedido fica
    marcado no painel com **ATENÇÃO** para reembolso ou troca, e o e-mail chega com "CONFERIR" no assunto.

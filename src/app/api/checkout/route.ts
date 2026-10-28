@@ -20,7 +20,8 @@ const texto = (v: unknown, max = 120) => (typeof v === "string" ? v.trim().slice
 const erro = (mensagem: string, status = 400) => Response.json({ erro: mensagem }, { status });
 
 // POST { slugs, cliente: {nome, email, telefone}, endereco: {cep, numero, complemento, rua, bairro}, freteId }
-// Cria o pedido (pares reservados por 30 min) e devolve o link de pagamento do Mercado Pago.
+// Cria o pedido e devolve o link de pagamento do Mercado Pago. Os pares NÃO ficam reservados aqui: continuam à venda
+// até o Mercado Pago avisar que a cliente gerou o Pix ou enviou o cartão (webhook -> reservar_pedido). O pedido vale 30 min.
 // Preço e frete são sempre recalculados aqui: nada do que vem do navegador define valor.
 export async function POST(request: Request) {
   const admin = supabaseAdmin();
@@ -86,6 +87,7 @@ export async function POST(request: Request) {
       status: "novo",
       origem: "site",
       reservar_minutos: RESERVA_MINUTOS,
+      sem_reserva: true,
       cliente_nome: nome,
       cliente_email: email,
       cliente_telefone: telefone,
@@ -128,7 +130,7 @@ export async function POST(request: Request) {
       notification_url: `${SITE_URL}/api/mercadopago/webhook`,
       expiration_date_to: new Date(Date.now() + RESERVA_MINUTOS * 60_000).toISOString(),
     });
-    revalidateTag(TAG_ESTOQUE, { expire: 0 }); // expira já: o par vendido não pode aparecer nem uma vez a mais
+    revalidateTag(TAG_ESTOQUE, { expire: 0 }); // um pedido anterior desta cliente pode ter liberado pares
     const usarSandbox = process.env.MERCADOPAGO_SANDBOX === "1" && preferencia.sandbox_init_point;
     return Response.json({ url: usarSandbox ? preferencia.sandbox_init_point : preferencia.init_point, codigo: pedido?.codigo_publico });
   } catch {

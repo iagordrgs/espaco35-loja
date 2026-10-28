@@ -143,6 +143,8 @@ $$;
 
 -- Cria o pedido e segura os pares. Status 'novo' reserva; 'pago'/'enviado'/'entregue' já vende.
 -- Falha (e não grava nada) se algum par já estiver reservado ou vendido.
+-- Com sem_reserva = true (pedido do site) só confere se os pares estão livres e NÃO reserva: a reserva
+-- acontece em reservar_pedido, quando o Mercado Pago avisa que o Pix foi gerado ou o cartão enviado.
 create or replace function public.criar_pedido(dados jsonb)
 returns bigint
 language plpgsql
@@ -152,6 +154,7 @@ as $$
 declare
   novo_id    bigint;
   st         text := coalesce(dados->>'status', 'novo');
+  sem_reserva boolean := coalesce((dados->>'sem_reserva')::boolean, false);
   prazo      timestamptz := case when (dados->>'reservar_minutos') is not null
                                  then now() + make_interval(mins => (dados->>'reservar_minutos')::int) end;
   slugs      text[];
@@ -184,12 +187,43 @@ begin
           case when st = 'novo' then prazo end, dados->>'cliente_ip_hash')
   returning id into novo_id;
 
-  update estoque
-     set status = case when st = 'novo' then 'reservado' else 'vendido' end,
-         pedido_id = novo_id, reservado_ate = case when st = 'novo' then prazo end, atualizado_em = now()
-   where slug = any(slugs);
+  if not (sem_reserva and st = 'novo') then
+    update estoque
+       set status = case when st = 'novo' then 'reservado' else 'vendido' end,
+           pedido_id = novo_id, reservado_ate = case when st = 'novo' then prazo end, atualizado_em = now()
+     where slug = any(slugs);
+  end if;
 
   return novo_id;
+end;
+$$;
+
+-- Pedido do site: reserva os pares quando o Mercado Pago avisa que o Pix foi gerado ou o cartão enviado.
+-- Devolve 'ok', 'ignorado' (pedido não está mais aguardando) ou 'indisponivel' (outra cliente levou o par antes).
+create or replace function public.reservar_pedido(pedido bigint)
+returns text
+language plpgsql
+security invoker
+set search_path = public
+as $$
+declare
+  ped   pedidos;
+  slugs text[];
+begin
+  select * into ped from pedidos where id = pedido for update;
+  if ped.id is null or ped.status <> 'novo' then return 'ignorado'; end if;
+
+  select array_agg(item->>'slug') into slugs from jsonb_array_elements(ped.itens) item;
+  insert into estoque (slug) select unnest(slugs) on conflict (slug) do nothing;
+  perform 1 from estoque where slug = any(slugs) for update;
+  if exists (select 1 from estoque e where e.slug = any(slugs)
+              and e.pedido_id is distinct from pedido and not par_livre(e)) then
+    return 'indisponivel';
+  end if;
+
+  update estoque set status = 'reservado', pedido_id = pedido, reservado_ate = ped.expira_em, atualizado_em = now()
+   where slug = any(slugs);
+  return 'ok';
 end;
 $$;
 
@@ -361,6 +395,8 @@ grant execute on function public.cancelar_expirados() to authenticated, service_
 grant execute on function public.criar_pedido(jsonb) to service_role;
 grant execute on function public.confirmar_pagamento(bigint, text, numeric) to service_role;
 grant execute on function public.cancelar_pedido_site(bigint, text) to service_role;
+grant execute on function public.reservar_pedido(bigint) to service_role;
+revoke execute on function public.reservar_pedido(bigint) from public, anon, authenticated;
 revoke execute on function public.cancelar_expirados() from public, anon;
 revoke execute on function public.confirmar_pagamento(bigint, text, numeric) from public, anon, authenticated;
 revoke execute on function public.cancelar_pedido_site(bigint, text) from public, anon, authenticated;

@@ -1,11 +1,13 @@
 import { revalidatePath, revalidateTag } from "next/cache";
 import { avisarEquipe, escapar } from "@/lib/email";
 import { TAG_ESTOQUE } from "@/lib/estoque";
-import { assinaturaValida, buscarPagamento } from "@/lib/mercadopago";
+import { assinaturaValida, buscarPagamento, cancelarPagamento } from "@/lib/mercadopago";
 import { reais, type ItemPedido } from "@/lib/painel";
 import { SITE_URL } from "@/lib/site";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
+// Pix gerado ou cartão em análise: é agora que os pares ficam reservados para a cliente (até o pedido vencer).
+const PENDENTES = ["pending", "in_process", "authorized"];
 // Antes de pagar: cancela o pedido e devolve os pares. Depois de pago: marca "NÃO ENVIAR" e avisa a equipe.
 const RECUSADOS = ["rejected", "cancelled"];
 const ESTORNOS = ["refunded", "charged_back", "in_mediation"];
@@ -36,6 +38,15 @@ export async function POST(request: Request) {
     const { data: resultado, error } = await admin.rpc("confirmar_pagamento", { pedido: idPedido, id_pagamento: String(pagamento.id), valor });
     if (error) return new Response("erro ao confirmar", { status: 500 }); // o Mercado Pago tenta de novo
     if (resultado !== "ja_pago") await enviarAviso(idPedido, resultado === "conflito" ? "conferir" : "pago");
+  } else if (PENDENTES.includes(pagamento.status)) {
+    const { data: reserva } = await admin.rpc("reservar_pedido", { pedido: idPedido });
+    if (reserva === "indisponivel") {
+      // outra cliente gerou o Pix (ou pagou) antes: cancela este pagamento no Mercado Pago e o pedido
+      await cancelarPagamento(String(pagamento.id)).catch(() => undefined);
+      await admin.rpc("cancelar_pedido_site", { pedido: idPedido, situacao: "par_indisponivel" });
+    } else {
+      await admin.from("pedidos").update({ pagamento_status: pagamento.status, pagamento_id: String(pagamento.id) }).eq("id", idPedido).eq("status", "novo");
+    }
   } else if (RECUSADOS.includes(pagamento.status)) {
     await admin.rpc("cancelar_pedido_site", { pedido: idPedido, situacao: pagamento.status });
   } else if (ESTORNOS.includes(pagamento.status)) {
