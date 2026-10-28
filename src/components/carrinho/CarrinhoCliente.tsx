@@ -54,7 +54,7 @@ export default function CarrinhoCliente({ pagamentoOnline }: { pagamentoOnline: 
           <div className="summary-total"><span>Total parcial</span><strong>{formatPrice(totalPrice)}</strong></div>
           <Link href="/checkout" className="button button-red">{pagamentoOnline ? "Finalizar compra" : "Continuar pelo WhatsApp"} <span>↗</span></Link>
           <p className="summary-note">{pagamentoOnline
-            ? "Pague com Pix ou cartão em até 6x, ou finalize com a equipe pelo WhatsApp, se preferir."
+            ? "Pague com Pix ou cartão em até 6x (com juros), ou finalize com a equipe pelo WhatsApp, se preferir."
             : "O frete e o pagamento são combinados diretamente com a loja. Nenhuma cobrança é feita neste site."}</p>
           <Link href="/produtos" className="continue-link">Continuar escolhendo</Link>
         </aside>

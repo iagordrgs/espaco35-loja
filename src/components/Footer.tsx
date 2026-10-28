@@ -29,7 +29,7 @@ export default function Footer() {
         </div>
         <div className="footer-contact">
           <span className="eyebrow eyebrow-light">Fale com a gente</span>
-          <p>Escolheu seu par? A gente combina pagamento e envio com você, direto pelo WhatsApp.</p>
+          <p>Escolheu seu par? Pague no site com Pix ou cartão, ou combine com a gente pelo WhatsApp.</p>
           <a href={WA} target="_blank" rel="noopener noreferrer" className="button button-light">Chamar no WhatsApp <span>↗</span></a>
           <p className="footer-atacado">Atacado a partir de 6 peças: <a href={LINK_ATACADO_WHATSAPP} target="_blank" rel="noopener noreferrer">fale com a equipe de vendas ↗</a></p>
         </div>
@@ -37,6 +37,7 @@ export default function Footer() {
       <div className="footer-bottom">
         <div className="footer-legal">
           <Link href="/trocas-e-devolucoes">Trocas e devoluções</Link>
+          <Link href="/privacidade">Privacidade</Link>
           <span>© {new Date().getFullYear()} Espaço 35</span>
         </div>
         {/* mostra o que estiver preenchido em VENDEDOR (site.ts); nome e CNPJ entram quando a MEI abrir */}

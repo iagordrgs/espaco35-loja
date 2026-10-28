@@ -13,7 +13,6 @@ export type Product = {
   colors: string[];
   images: string[];
   featured?: boolean; // aparece na seção "Destaques" da home
-  lastUnits?: boolean; // mostra o selo "Últimas unidades" no card
   soldOut?: boolean; // true = par já vendido: fica no site com o selo "Vendido" e sem botão de compra
   reserved?: boolean; // preenchido pelo painel (estoque no Supabase): par reservado para uma cliente
 };
@@ -23,7 +22,6 @@ export type Product = {
  *  COMO ESCOLHER OS DESTAQUES DA HOME
  *  Em qualquer par abaixo, adicione  featured: true,  para ele
  *  aparecer na seção "Destaques". Remova para tirar.
- *  Para o selo dourado de escassez, adicione  lastUnits: true,
  *  Lista numerada dos pares: ver o número no nome do arquivo da
  *  imagem (espaco35-01 = par 1, etc.).
  * ─────────────────────────────────────────────────────────────
@@ -66,7 +64,6 @@ const pares: ParSemPreco[] = [
     colors: ["Prata"],
     images: ["/imagens/espaco35-01.jpg"],
     featured: true,
-    lastUnits: true,
   },
   {
     slug: "rasteira-tiras-mostarda",
@@ -134,7 +131,6 @@ const pares: ParSemPreco[] = [
     colors: ["Off-White"],
     images: ["/imagens/espaco35-07.jpg"],
     featured: true,
-    lastUnits: true,
   },
   {
     slug: "flatform-caramelo-tachas",
@@ -235,7 +231,6 @@ const pares: ParSemPreco[] = [
     colors: ["Nude"],
     images: ["/imagens/espaco35-16.jpg"],
     featured: true,
-    lastUnits: true,
   },
   {
     slug: "tenis-rose-detalhe-dourado",
@@ -248,7 +243,6 @@ const pares: ParSemPreco[] = [
     colors: ["Rosê"],
     images: ["/imagens/espaco35-17.jpg"],
     featured: true,
-    lastUnits: true,
   },
   {
     slug: "tenis-branco-off-white",
@@ -283,7 +277,6 @@ const pares: ParSemPreco[] = [
     colors: ["Dourado"],
     images: ["/imagens/espaco35-20.jpg"],
     featured: true,
-    lastUnits: true,
   },
   {
     slug: "tenis-branco-matelasse",
@@ -362,7 +355,6 @@ const pares: ParSemPreco[] = [
     colors: ["Caramelo"],
     images: ["/imagens/espaco35-27.jpg"],
     featured: true,
-    lastUnits: true,
   },
   {
     slug: "rasteira-off-white-tiras-cruzadas",
@@ -398,7 +390,7 @@ const pares: ParSemPreco[] = [
     images: ["/imagens/espaco35-31.jpg"],
   },
   {
-    slug: "anabela-dourada-tachas",
+    slug: "rasteira-bege-florzinhas",
     code: "E35-031",
     name: "Rasteira Bege Florzinhas",
     brand: "Pink Cats",
@@ -408,7 +400,6 @@ const pares: ParSemPreco[] = [
     colors: ["Bege"],
     images: ["/imagens/espaco35-32.jpg"],
     featured: true,
-    lastUnits: true,
   },
   {
     slug: "sandalia-nude-salto-bloco",
@@ -522,7 +513,6 @@ const pares: ParSemPreco[] = [
     colors: ["Caramelo"],
     images: ["/imagens/espaco35-43.jpg", "/imagens/espaco35-66.jpg"],
     featured: true,
-    lastUnits: true,
   },
   {
     slug: "rasteira-nude-pedraria",
@@ -546,7 +536,6 @@ const pares: ParSemPreco[] = [
     colors: ["Verde"],
     images: ["/imagens/espaco35-45.jpg"],
     featured: true,
-    lastUnits: true,
   },
   {
     slug: "rasteira-caramelo-tiras",
@@ -560,7 +549,7 @@ const pares: ParSemPreco[] = [
     images: ["/imagens/espaco35-46.jpg"],
   },
   {
-    slug: "sandalia-caramelo-salto-taca",
+    slug: "papete-caramelo-pedra-verde",
     code: "E35-045",
     name: "Papete Caramelo Pedra Verde",
     brand: "Mississipi",
@@ -570,7 +559,6 @@ const pares: ParSemPreco[] = [
     colors: ["Caramelo"],
     images: ["/imagens/espaco35-47.jpg"],
     featured: true,
-    lastUnits: true,
   },
   {
     slug: "sandalia-caramelo-trancada",
@@ -704,7 +692,6 @@ const pares: ParSemPreco[] = [
     colors: ["Rosê"],
     images: ["/imagens/espaco35-59.jpg"],
     featured: true,
-    lastUnits: true,
   },
   {
     slug: "papete-caramelo-tiras-finas",
@@ -750,7 +737,6 @@ const pares: ParSemPreco[] = [
     colors: ["Rosê"],
     images: ["/imagens/espaco35-63.jpg", "/imagens/espaco35-70.jpg"],
     featured: true,
-    lastUnits: true,
   },
   {
     slug: "tenis-bege-matelasse",
@@ -763,7 +749,6 @@ const pares: ParSemPreco[] = [
     colors: ["Bege"],
     images: ["/imagens/espaco35-64.jpg", "/imagens/espaco35-71.jpg"],
     featured: true,
-    lastUnits: true,
   },
   {
     slug: "tenis-off-white-plataforma",

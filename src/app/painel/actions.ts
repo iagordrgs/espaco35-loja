@@ -10,6 +10,8 @@ import { STATUS_PEDIDO, type StatusPedido } from "@/lib/painel";
 
 export type EstadoForm = { erro?: string };
 
+export const RESERVA_PAINEL_HORAS = 24;
+
 const texto = (form: FormData, campo: string) => String(form.get(campo) ?? "").trim();
 const dinheiro = (form: FormData, campo: string) => {
   const valor = Number(texto(form, campo).replace(/\./g, "").replace(",", ".") || 0);
@@ -82,6 +84,7 @@ export async function criarPedido(_estado: EstadoForm, form: FormData): Promise<
   const { data, error } = await supabase.rpc("criar_pedido", {
     dados: {
       status,
+      reservar_minutos: status === "novo" ? RESERVA_PAINEL_HORAS * 60 : undefined, // venda pelo WhatsApp/direct: 24 h, depois o par volta sozinho
       cliente_nome: cliente,
       cliente_telefone: texto(form, "cliente_telefone"),
       cliente_cidade: texto(form, "cliente_cidade"),
@@ -101,6 +104,17 @@ export async function criarPedido(_estado: EstadoForm, form: FormData): Promise<
   }
   atualizarTelas();
   redirect(`/painel/pedidos/${data}`);
+}
+
+// Código de rastreio (ou "Uber Flash", "retirado") do pedido: fica no painel e vai na mensagem para a cliente.
+export async function salvarRastreio(form: FormData) {
+  const { supabase } = await exigirUsuario();
+  const id = Number(texto(form, "id"));
+  const rastreio = texto(form, "rastreio").slice(0, 120);
+  if (!id) return;
+  const { error } = await supabase.from("pedidos").update({ rastreio: rastreio || null, atualizado_em: new Date().toISOString() }).eq("id", id);
+  if (error) throw new Error(error.message);
+  revalidatePath("/painel", "layout");
 }
 
 export async function atualizarPedido(form: FormData) {

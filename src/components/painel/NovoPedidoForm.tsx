@@ -104,7 +104,7 @@ export default function NovoPedidoForm({ pares, vendedores, inicial, minimoAtaca
         </label>
         <label>Situação
           <select name="status" defaultValue="novo">
-            <option value="novo">Aguardando pagamento (reserva o par)</option>
+            <option value="novo">Aguardando pagamento (reserva o par por 24 h)</option>
             <option value="pago">Já pago (marca como vendido)</option>
           </select>
         </label>

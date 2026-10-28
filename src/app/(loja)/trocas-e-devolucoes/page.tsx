@@ -44,12 +44,24 @@ export default function TrocasEDevolucoesPage() {
             Chame a gente no WhatsApp {WHATSAPP_EXIBIDO} dentro dos 7 dias — pode
             ser na mesma conversa em que você fez o pedido.
           </li>
-          <li>Combinamos com você como devolver o par.</li>
+          <li>
+            O frete da devolução é por nossa conta: mandamos uma etiqueta para
+            você postar nos Correios ou, em Fortaleza, buscamos o par com você.
+          </li>
           <li>Mande o par de volta como você recebeu: novo, sem uso e na caixa.</li>
           <li>
             Devolvemos o valor pago, pela mesma forma de pagamento que você usou.
           </li>
         </ol>
+      </section>
+
+      <section>
+        <h2>Quando o pedido é enviado</h2>
+        <p>
+          Postamos em até 2 dias úteis depois da confirmação do pagamento e
+          mandamos o código de rastreio pelo WhatsApp. Em Fortaleza, a entrega
+          é por motoboy ou você retira com a equipe, combinando dia e hora.
+        </p>
       </section>
 
       <section>

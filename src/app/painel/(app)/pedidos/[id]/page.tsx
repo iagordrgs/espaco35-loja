@@ -1,8 +1,17 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { atualizarPedido } from "@/app/painel/actions";
+import { atualizarPedido, salvarRastreio } from "@/app/painel/actions";
 import { exigirUsuario } from "@/lib/supabase/server";
-import { ROTULO_STATUS, dataHora, reais, whatsCliente, type Pedido, type StatusPedido } from "@/lib/painel";
+import { ROTULO_STATUS, agoraMs, dataHora, reais, whatsCliente, type Pedido, type StatusPedido } from "@/lib/painel";
+
+// Mensagem pronta para a cliente quando o pedido sai (abre no WhatsApp da loja).
+function mensagemEnviado(p: Pedido) {
+  const pares = p.itens.map((i) => i.nome).join(", ");
+  const retirada = /retira/i.test(p.entrega ?? "");
+  if (retirada) return `Oi, ${p.cliente_nome.split(" ")[0]}! Seu pedido #${p.id} (${pares}) já está separado para retirada. Vamos combinar dia, hora e local? 🤍`;
+  const rastreio = p.rastreio ? ` Código de rastreio: ${p.rastreio}.` : "";
+  return `Oi, ${p.cliente_nome.split(" ")[0]}! Seu pedido #${p.id} (${pares}) foi enviado 📦${rastreio} Qualquer dúvida é só chamar. Equipe Espaço 35 🤍`;
+}
 
 // Próximos passos possíveis a partir de cada situação.
 const PROXIMOS: Record<StatusPedido, StatusPedido[]> = {
@@ -28,6 +37,7 @@ export default async function PedidoPage({ params }: { params: Promise<{ id: str
   if (!data) notFound();
   const pedido = data as Pedido;
   const whats = whatsCliente(pedido.cliente_telefone);
+  const agora = agoraMs();
 
   return (
     <div className="painel-pagina">
@@ -78,8 +88,26 @@ CEP ${pedido.endereco.cep ?? ""}`}</p>
           {pedido.origem === "site" && (
             <p className="painel-sub">
               {pedido.pagamento_id ? `Mercado Pago #${pedido.pagamento_id} · ${pedido.pagamento_status ?? ""}` : "Aguardando pagamento no Mercado Pago"}
-              {pedido.status === "novo" && pedido.expira_em ? ` · reserva até ${dataHora(pedido.expira_em)}` : ""}
             </p>
+          )}
+          {pedido.status === "novo" && pedido.expira_em && (
+            <p className="painel-sub">
+              {new Date(pedido.expira_em).getTime() < agora ? `Reserva venceu em ${dataHora(pedido.expira_em)}: o par voltou à vitrine. Confira antes de marcar como pago.` : `Par reservado até ${dataHora(pedido.expira_em)}`}
+            </p>
+          )}
+
+          <h2>Envio</h2>
+          <form action={salvarRastreio} className="painel-rastreio">
+            <input type="hidden" name="id" value={pedido.id} />
+            <label>Código de rastreio ou como foi entregue
+              <input name="rastreio" defaultValue={pedido.rastreio ?? ""} placeholder="Ex.: AB123456789BR, Uber Flash, retirado na loja" maxLength={120} />
+            </label>
+            <button type="submit" className="painel-botao">Salvar</button>
+          </form>
+          {whats && ["pago", "enviado", "entregue"].includes(pedido.status) && (
+            <a className="painel-link" href={`${whats}?text=${encodeURIComponent(mensagemEnviado(pedido))}`} target="_blank" rel="noopener noreferrer">
+              Avisar a cliente no WhatsApp (mensagem pronta) ↗
+            </a>
           )}
           {pedido.observacoes && <><h2>Observações</h2><p className="painel-obs">{pedido.observacoes}</p></>}
 

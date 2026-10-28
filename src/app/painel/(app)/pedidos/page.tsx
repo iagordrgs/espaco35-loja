@@ -4,7 +4,7 @@ import { ROTULO_STATUS, STATUS_PEDIDO, dataHora, reais, type Pedido, type Status
 
 export default async function PedidosPage({ searchParams }: { searchParams: Promise<{ status?: string; q?: string }> }) {
   const { supabase } = await exigirUsuario();
-  await supabase.rpc("cancelar_expirados"); // pedidos do site não pagos a tempo voltam ao estoque
+  await supabase.rpc("cancelar_expirados"); // reservas vencidas (site 30 min, WhatsApp 24 h) voltam ao estoque
   const { status, q } = await searchParams;
   const filtro = STATUS_PEDIDO.includes(status as StatusPedido) ? (status as StatusPedido) : undefined;
 

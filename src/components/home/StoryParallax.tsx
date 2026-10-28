@@ -20,8 +20,8 @@ export default function StoryParallax() {
           <p>A Espaço 35 nasceu para reunir modelos que quase nunca aparecem no 35. Uma curadoria pequena e direta: cada par é novo, original e único. Quando sai, não volta.</p>
           <ol className="story-steps">
             <li><strong>01</strong><span>Escolha o seu par no site ou no catálogo</span></li>
-            <li><strong>02</strong><span>Reserve pelo WhatsApp com a nossa equipe</span></li>
-            <li><strong>03</strong><span>Receba em casa, com frete combinado no pedido</span></li>
+            <li><strong>02</strong><span>Pague no site com Pix ou cartão, ou reserve pelo WhatsApp</span></li>
+            <li><strong>03</strong><span>Receba em casa (postamos em até 2 dias úteis) ou retire com a equipe</span></li>
           </ol>
           <Link href="/produtos" className="button button-light">Explorar a coleção <span aria-hidden="true">↗</span></Link>
         </div>

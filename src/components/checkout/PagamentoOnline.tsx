@@ -80,7 +80,7 @@ export default function PagamentoOnline({ products, freteFortaleza }: { products
   return (
     <form className="checkout-card pagamento-online" onSubmit={pagar}>
       <h2>Pagar agora · Pix ou cartão</h2>
-      <p className="checkout-hint">Pagamento seguro pelo Mercado Pago. Entrega em Fortaleza por {formatPrice(freteFortaleza)} ou retirada grátis combinada com a equipe; para outras cidades, o frete é calculado pelo CEP.</p>
+      <p className="checkout-hint">Pagamento seguro pelo Mercado Pago: Pix à vista ou cartão em até 6x (parcelas com juros, mostradas antes de confirmar). Postamos em até 2 dias úteis após a confirmação. Entrega em Fortaleza por {formatPrice(freteFortaleza)} ou retirada grátis combinada com a equipe; para outras cidades, o frete é calculado pelo CEP.</p>
 
       <fieldset className="checkout-campos">
         <label className="largo">Nome completo<input name="nome" autoComplete="name" required minLength={3} /></label>

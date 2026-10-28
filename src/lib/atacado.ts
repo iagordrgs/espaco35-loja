@@ -6,6 +6,6 @@ import type { Category } from "@/data/products";
 export const PRECO_ATACADO: Record<Category, number> = {
   tenis: 109.9,
   sapatos: 99.9,
-  sandalias: 89.9,
+  sandalias: 79.9,
   botas: 99.9,
 };

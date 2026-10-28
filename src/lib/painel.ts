@@ -41,6 +41,7 @@ export type Pedido = {
   pagamento_id?: string | null;
   pagamento_status?: string | null;
   expira_em?: string | null;
+  rastreio?: string | null;
 };
 
 export type LinhaEstoque = { slug: string; status: "disponivel" | "reservado" | "vendido"; reservado_ate: string | null; pedido_id: number | null };

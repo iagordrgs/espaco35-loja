@@ -66,12 +66,12 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
           )}
           <div className="detail-assurances">
             <span><b>✓</b> Par único disponível no tamanho 35</span>
-            <span><b>✓</b> Pagamento e envio combinados no atendimento</span>
-            <span><b>✓</b> Atendimento em Fortaleza e envio para todo o Brasil</span>
+            <span><b>✓</b> Pague no site com Pix ou cartão em até 6x (com juros)</span>
+            <span><b>✓</b> Postamos em até 2 dias úteis; Fortaleza com entrega ou retirada grátis</span>
           </div>
           <AtacadoChamada variante="aviso" />
           <p className="detail-policy">
-            O frete é combinado pelo WhatsApp. Você pode desistir da compra em até 7 dias após receber o pedido. <Link href="/trocas-e-devolucoes">Saiba mais</Link> · dúvidas? {WHATSAPP_EXIBIDO}.
+            O frete é calculado pelo CEP na finalização; enviamos para todo o Brasil. Você pode desistir da compra em até 7 dias após receber o pedido. <Link href="/trocas-e-devolucoes">Saiba mais</Link> · dúvidas? {WHATSAPP_EXIBIDO}.
           </p>
         </div>
       </div>

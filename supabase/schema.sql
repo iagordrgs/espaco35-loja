@@ -49,6 +49,7 @@ alter table public.pedidos add column if not exists expira_em timestamptz;      
 alter table public.pedidos add column if not exists pagamento_id text;                           -- id do pagamento no Mercado Pago
 alter table public.pedidos add column if not exists pagamento_status text;                       -- approved, pending, rejected...
 alter table public.pedidos add column if not exists cliente_ip_hash text;                        -- hash do IP: limita reservas abertas por aparelho
+alter table public.pedidos add column if not exists rastreio text;                               -- código de rastreio ou como foi entregue (Uber Flash, retirado)
 
 -- Equipe: só quem está nesta lista mexe no painel. Ter conta no Supabase não basta.
 -- Para incluir alguém: insert into public.equipe (user_id, email) select id, email from auth.users where email = 'pessoa@exemplo.com';
@@ -117,7 +118,7 @@ returns boolean language sql stable as $$
       or (e.status = 'reservado' and e.reservado_ate is not null and e.reservado_ate < now());
 $$;
 
--- Pedidos do site que passaram do prazo sem pagamento: cancela e devolve os pares ao estoque.
+-- Pedidos com reserva vencida sem pagamento (site: 30 min; painel/WhatsApp: 24 h): cancela e devolve os pares.
 create or replace function public.cancelar_expirados()
 returns integer
 language plpgsql
@@ -129,7 +130,7 @@ declare
 begin
   with vencidos as (
     update pedidos set status = 'cancelado', pagamento_status = 'expirado', atualizado_em = now()
-     where origem = 'site' and status = 'novo' and expira_em is not null and expira_em < now()
+     where status = 'novo' and expira_em is not null and expira_em < now()
     returning id
   )
   select count(*) into qtd from vencidos;
