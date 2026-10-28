@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { atualizarPedido, salvarRastreio } from "@/app/painel/actions";
+import { atualizarPedido, gerarLinkPagamento, salvarRastreio } from "@/app/painel/actions";
+import CopiarLink from "@/components/painel/CopiarLink";
 import { exigirUsuario } from "@/lib/supabase/server";
 import { ROTULO_STATUS, agoraMs, dataHora, reais, whatsCliente, type Pedido, type StatusPedido } from "@/lib/painel";
 
@@ -12,6 +13,17 @@ function mensagemEnviado(p: Pedido) {
   const rastreio = p.rastreio ? ` Código de rastreio: ${p.rastreio}.` : "";
   return `Oi, ${p.cliente_nome.split(" ")[0]}! Seu pedido #${p.id} (${pares}) foi enviado 📦${rastreio} Qualquer dúvida é só chamar. Equipe Espaço 35 🤍`;
 }
+
+// Mensagem pronta com o link de pagamento (venda fechada no WhatsApp ou direct).
+function mensagemLink(p: Pedido, link: string) {
+  const pares = p.itens.map((i) => i.nome).join(", ");
+  const prazo = p.expira_em ? ` O par fica reservado para você até ${dataHora(p.expira_em)}.` : "";
+  return `Oi, ${p.cliente_nome.split(" ")[0]}! Aqui está o link para pagar o pedido #${p.id} (${pares}), total ${reais(p.total)}: ${link}
+Pix ou cartão em até 6x (com juros).${prazo} Equipe Espaço 35 🤍`;
+}
+
+// Só aceita link do próprio Mercado Pago (o endereço da página pode ser editado por quem está logado).
+const linkValido = (v: unknown) => typeof v === "string" && /^https:\/\/(www|sandbox)\.mercadopago\.com(\.br)?\//.test(v) ? v : null;
 
 // Próximos passos possíveis a partir de cada situação.
 const PROXIMOS: Record<StatusPedido, StatusPedido[]> = {
@@ -30,14 +42,17 @@ const ROTULO_BOTAO: Record<StatusPedido, string> = {
   cancelado: "Cancelar e devolver ao estoque",
 };
 
-export default async function PedidoPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function PedidoPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ link?: string }> }) {
   const { supabase } = await exigirUsuario();
   const { id } = await params;
+  const { link: linkRecente } = await searchParams;
   const { data } = await supabase.from("pedidos").select("*").eq("id", Number(id)).maybeSingle();
   if (!data) notFound();
   const pedido = data as Pedido;
   const whats = whatsCliente(pedido.cliente_telefone);
   const agora = agoraMs();
+  const linkPagamento = linkValido(linkRecente) ?? linkValido(pedido.link_pagamento);
+  const aguardandoLink = pedido.status === "novo" && pedido.origem !== "site";
 
   return (
     <div className="painel-pagina">
@@ -94,6 +109,32 @@ CEP ${pedido.endereco.cep ?? ""}`}</p>
             <p className="painel-sub">
               {new Date(pedido.expira_em).getTime() < agora ? `Reserva venceu em ${dataHora(pedido.expira_em)}: o par voltou à vitrine. Confira antes de marcar como pago.` : `Par reservado até ${dataHora(pedido.expira_em)}`}
             </p>
+          )}
+          {pedido.origem !== "site" && pedido.pagamento_id && (
+            <p className="painel-sub">Mercado Pago #{pedido.pagamento_id} · {pedido.pagamento_status ?? ""}</p>
+          )}
+
+          {aguardandoLink && (
+            <>
+              <h2>Link de pagamento</h2>
+              {linkPagamento ? (
+                <>
+                  <CopiarLink link={linkPagamento} />
+                  {whats && (
+                    <a className="painel-link" href={`${whats}?text=${encodeURIComponent(mensagemLink(pedido, linkPagamento))}`} target="_blank" rel="noopener noreferrer">
+                      Enviar o link para a cliente no WhatsApp (mensagem pronta) ↗
+                    </a>
+                  )}
+                  <p className="painel-sub">Quando a cliente pagar, o pedido vira “Pago” sozinho e o par sai do site. O link vence com a reserva.</p>
+                </>
+              ) : (
+                <form action={gerarLinkPagamento}>
+                  <input type="hidden" name="id" value={pedido.id} />
+                  <button type="submit" className="painel-botao principal">Gerar link de pagamento (Pix ou cartão)</button>
+                  <p className="painel-sub">Para venda fechada no WhatsApp ou direct. A cliente paga pelo Mercado Pago e o pedido é confirmado sozinho.</p>
+                </form>
+              )}
+            </>
           )}
 
           <h2>Envio</h2>

@@ -80,13 +80,15 @@ async function enviarAviso(idPedido: number, tipo: "pago" | "conferir" | "estorn
   }[tipo];
   await avisarEquipe(
     assunto,
-    `<h2>Pedido #${p.id} · site</h2>
+    `<h2>Pedido #${p.id} · ${p.origem === "site" ? "site" : "link de pagamento (venda pela equipe)"}</h2>
      ${alerta}
      <ul>${itens}</ul>
      <p>Frete: ${reais(p.frete)} · ${escapar(p.entrega)}<br><strong>Total: ${reais(p.total)}</strong></p>
      <h3>Enviar para</h3>
-     <p>${escapar(p.cliente_nome)}<br>${escapar(e.rua)}, ${escapar(e.numero)}${e.complemento ? ` · ${escapar(e.complemento)}` : ""}<br>
-     ${escapar(e.bairro)} · ${escapar(e.cidade)} - ${escapar(e.uf)} · CEP ${escapar(e.cep)}</p>
+     ${p.endereco
+       ? `<p>${escapar(p.cliente_nome)}<br>${escapar(e.rua)}, ${escapar(e.numero)}${e.complemento ? ` · ${escapar(e.complemento)}` : ""}<br>
+     ${escapar(e.bairro)} · ${escapar(e.cidade)} - ${escapar(e.uf)} · CEP ${escapar(e.cep)}</p>`
+       : `<p>${escapar(p.cliente_nome)}${p.cliente_cidade ? ` · ${escapar(p.cliente_cidade)}` : ""}<br>Endereço combinado pela equipe (pedido do painel).</p>`}
      <p>WhatsApp: ${escapar(p.cliente_telefone)} · E-mail: ${escapar(p.cliente_email)}</p>
      <p><a href="${SITE_URL}/painel/pedidos/${p.id}">Abrir no painel</a></p>`,
   );

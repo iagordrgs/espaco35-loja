@@ -50,6 +50,7 @@ alter table public.pedidos add column if not exists pagamento_id text;          
 alter table public.pedidos add column if not exists pagamento_status text;                       -- approved, pending, rejected...
 alter table public.pedidos add column if not exists cliente_ip_hash text;                        -- hash do IP: limita reservas abertas por aparelho
 alter table public.pedidos add column if not exists rastreio text;                               -- código de rastreio ou como foi entregue (Uber Flash, retirado)
+alter table public.pedidos add column if not exists link_pagamento text;                         -- link do Mercado Pago gerado pelo painel para venda pelo WhatsApp/direct
 
 -- Equipe: só quem está nesta lista mexe no painel. Ter conta no Supabase não basta.
 -- Para incluir alguém: insert into public.equipe (user_id, email) select id, email from auth.users where email = 'pessoa@exemplo.com';

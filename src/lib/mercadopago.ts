@@ -1,7 +1,7 @@
 import "server-only";
 import { InvalidWebhookSignatureError, WebhookSignatureValidator } from "mercadopago";
 
-// Mercado Pago (Checkout Pro: Pix e cartão). Variáveis na Vercel:
+// Mercado Pago (Checkout Pro: Pix e cartão). Usado pelo checkout do site e pelo link de pagamento do painel. Variáveis na Vercel:
 //   MERCADOPAGO_ACCESS_TOKEN    Suas integrações > aplicação > Credenciais de produção (APP_USR-...)
 //   MERCADOPAGO_WEBHOOK_SECRET  Suas integrações > aplicação > Webhooks > assinatura secreta
 //   MERCADOPAGO_API             só para testes locais (padrão https://api.mercadopago.com)
@@ -34,7 +34,7 @@ export type ItemPreferencia = { id: string; title: string; quantity: number; uni
 
 export function criarPreferencia(corpo: {
   items: ItemPreferencia[];
-  payer: { name: string; email: string };
+  payer: { name: string; email?: string };
   external_reference: string;
   back_urls: { success: string; pending: string; failure: string };
   notification_url: string;

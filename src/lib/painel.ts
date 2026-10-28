@@ -1,5 +1,8 @@
 // Tipos e textos compartilhados pelas telas do painel.
 
+// Venda pelo WhatsApp/direct: o par fica reservado por 24 h aguardando o pagamento; depois volta sozinho.
+export const RESERVA_PAINEL_HORAS = 24;
+
 export const STATUS_PEDIDO = ["novo", "pago", "enviado", "entregue", "cancelado"] as const;
 export type StatusPedido = (typeof STATUS_PEDIDO)[number];
 
@@ -42,6 +45,8 @@ export type Pedido = {
   pagamento_status?: string | null;
   expira_em?: string | null;
   rastreio?: string | null;
+  codigo_publico?: string;
+  link_pagamento?: string | null;
 };
 
 export type LinhaEstoque = { slug: string; status: "disponivel" | "reservado" | "vendido"; reservado_ate: string | null; pedido_id: number | null };

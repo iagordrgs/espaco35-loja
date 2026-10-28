@@ -16,7 +16,7 @@ export default async function PedidoPage({ params, searchParams }: { params: Pro
   if (!/^[0-9a-f-]{36}$/i.test(codigo)) notFound();
   const admin = supabaseAdmin();
   if (!admin) notFound();
-  const { data: p } = await admin.from("pedidos").select("id,status,itens,frete,total,entrega,pagamento_status").eq("codigo_publico", codigo).maybeSingle();
+  const { data: p } = await admin.from("pedidos").select("id,status,itens,frete,total,entrega,pagamento_status,origem,expira_em").eq("codigo_publico", codigo).maybeSingle();
   if (!p) notFound();
 
   // A situação vem só do banco (atualizado pelo aviso assinado do Mercado Pago). O status no endereço da volta
@@ -27,11 +27,13 @@ export default async function PedidoPage({ params, searchParams }: { params: Pro
   const confirmando = aguardando && retorno === "approved";
   const pixGerado = aguardando && ["pending", "in_process", "authorized"].includes(p.pagamento_status ?? "");
   const perdeuPar = p.status === "cancelado" && p.pagamento_status === "par_indisponivel";
-  const ajuda = linkWhatsApp(`Olá! Fiz o pedido #${p.id} pelo site e queria falar sobre ele.`);
+  const pelaEquipe = p.origem === "painel"; // venda fechada no WhatsApp/direct, paga pelo link do Mercado Pago
+  const vence = p.expira_em ? new Date(p.expira_em).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", timeZone: "America/Fortaleza" }) : null;
+  const ajuda = linkWhatsApp(pelaEquipe ? `Olá! Queria falar sobre o meu pedido #${p.id}.` : `Olá! Fiz o pedido #${p.id} pelo site e queria falar sobre ele.`);
 
   return (
     <main className="page-center pedido-retorno">
-      {(pago || aguardando) && <LimparSacola />}
+      {(pago || aguardando) && !pelaEquipe && <LimparSacola />}
       <span className="empty-mark" aria-hidden="true">{pago ? "✓" : aguardando ? "…" : "!"}</span>
       <h1>{pago ? "Pagamento aprovado!" : confirmando ? "Confirmando o pagamento…" : aguardando ? "Aguardando o pagamento" : "O pagamento não foi concluído"}</h1>
       <p>
@@ -39,12 +41,16 @@ export default async function PedidoPage({ params, searchParams }: { params: Pro
           ? `Recebemos seu pedido #${p.id}. A equipe da Espaço 35 já foi avisada e vai separar seus pares para envio. Você recebe o acompanhamento pelo WhatsApp.`
           : confirmando
             ? `O Mercado Pago está confirmando o pagamento do pedido #${p.id}. Isso leva alguns segundos: atualize esta página.`
+            : pelaEquipe && aguardando
+            ? `Seu pedido #${p.id} está reservado com a equipe${vence ? ` até ${vence}` : ""}. Pague pelo link do Mercado Pago (Pix ou cartão): a confirmação chega em instantes, atualize esta página.`
             : pixGerado
             ? `Seu par está reservado para você. Pague o Pix (ou aguarde a análise do cartão) em até 30 minutos: a confirmação chega em instantes, atualize esta página.`
             : aguardando
             ? `Seu pedido #${p.id} vale por 30 minutos. O par só fica reservado para você quando o Pix é gerado ou o cartão enviado no Mercado Pago.`
             : perdeuPar
             ? `Outra cliente garantiu o par segundos antes de você. Como cada modelo tem um par só, o pedido #${p.id} foi cancelado e nada foi cobrado.`
+            : pelaEquipe
+            ? `O pedido #${p.id} não está mais aguardando pagamento. Fale com a equipe pelo WhatsApp para combinar.`
             : `Os pares do pedido #${p.id} voltaram para a loja. Você pode tentar de novo ou finalizar com a nossa equipe pelo WhatsApp.`}
       </p>
       <ul className="pedido-resumo">
@@ -53,7 +59,7 @@ export default async function PedidoPage({ params, searchParams }: { params: Pro
         <li className="total"><span>Total</span><strong>{reais(p.total)}</strong></li>
       </ul>
       <div className="hero-actions" style={{ justifyContent: "center" }}>
-        {pago || aguardando ? <Link href="/produtos" className="button button-dark">Continuar na loja <span>↗</span></Link> : <Link href="/carrinho" className="button button-dark">Voltar à sacola <span>↗</span></Link>}
+        {pago || aguardando || pelaEquipe ? <Link href="/produtos" className="button button-dark">Continuar na loja <span>↗</span></Link> : <Link href="/carrinho" className="button button-dark">Voltar à sacola <span>↗</span></Link>}
         <a href={ajuda} target="_blank" rel="noopener noreferrer" className="button button-outline">Falar no WhatsApp</a>
       </div>
       <p className="checkout-hint">Dúvidas? WhatsApp {WHATSAPP_EXIBIDO}.</p>
