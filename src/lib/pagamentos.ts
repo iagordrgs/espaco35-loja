@@ -21,6 +21,8 @@ const PENDENTES = ["pending", "in_process", "authorized"];
 const RECUSADOS = ["rejected", "cancelled"];
 const ESTORNOS = ["refunded", "charged_back", "in_mediation"];
 export const PAGOS = ["pago", "enviado", "entregue"];
+// situações de um pagamento que foi aprovado e ficou registrado no pedido (depois pode ter virado estorno)
+const REGISTRADOS = ["approved", "valor_divergente", ...ESTORNOS];
 
 const JANELA_DIAS = 4; // a conferência roda 1 vez por dia e olha os pagamentos que mudaram nos últimos 4 dias
 const MAX_PAGAMENTOS = 1000; // teto por rodada; passou disso, o resumo avisa que ficou incompleta
@@ -124,10 +126,11 @@ async function registrarEstorno(admin: SupabaseClient, idPedido: number, situaca
   const { data, error } = await admin.rpc("registrar_estorno", { pedido: idPedido, situacao, id_pagamento: idPagamento });
   if (!error) return data as string | null;
   if (error.code !== "PGRST202") throw new ErroBanco("registrar_estorno", error);
-  const { data: p, error: erroLer } = await admin.from("pedidos").select("pagamento_id,pagamento_status").eq("id", idPedido).maybeSingle();
+  const { data: p, error: erroLer } = await admin.from("pedidos").select("status,pagamento_id,pagamento_status").eq("id", idPedido).maybeSingle();
   if (erroLer) throw new ErroBanco("ler o pedido do estorno", erroLer);
-  // mesma regra do banco novo: só é "outro" se o pedido tem outro pagamento aprovado registrado
-  if (p?.pagamento_id && p.pagamento_id !== idPagamento && ["approved", "valor_divergente"].includes(p.pagamento_status ?? "")) return "outro_pagamento";
+  // mesma regra do banco novo (registrar_estorno): o estorno é de outro pagamento?
+  if (p?.pagamento_id && p.pagamento_id !== idPagamento && (!PAGOS.includes(p.status) || REGISTRADOS.includes(p.pagamento_status ?? "")))
+    return "outro_pagamento";
   return rpc(admin, "registrar_estorno", { pedido: idPedido, situacao });
 }
 
@@ -268,10 +271,13 @@ async function acertarPagamentos(admin: SupabaseClient, agora: Date, resumo: Res
     if (!precisaAcertar(pedido, pagamento)) continue;
     try {
       const resultado = await processarPagamento(admin, pagamento, "conferencia");
-      // 'ja_pago': o banco já tinha tratado este pagamento (pagamentos_vistos); não é acerto
-      if (resultado !== "ja_pago") resumo.acertados.push(`Pedido #${pedido.id}: pagamento ${idPagamento} ${pagamento.status} (resultado: ${resultado})`);
       const { data: atual } = await admin.from("pedidos").select("id,status,pagamento_id,pagamento_status").eq("id", pedido.id).maybeSingle();
       if (atual) pedidos.set(pedido.id, atual as PedidoResumo);
+      if (resultado !== "ja_pago") resumo.acertados.push(`Pedido #${pedido.id}: pagamento ${idPagamento} ${pagamento.status} (resultado: ${resultado})`);
+      // 'ja_pago' com o pedido não pago: o banco já tinha visto este pagamento aprovado (conflito), mas o pedido
+      // registra outro. É dinheiro retido: entra no resumo até a equipe enviar ou reembolsar
+      else if (pagamento.status === "approved" && !PAGOS.includes((atual as PedidoResumo | null)?.status ?? pedido.status))
+        resumo.suspeitas.push(`Pedido #${pedido.id}: o pagamento ${idPagamento} está aprovado no Mercado Pago, mas o pedido não está pago. Confira se é para enviar ou reembolsar.`);
     } catch (erro) {
       resumo.erros.push(`Pedido #${pedido.id}, pagamento ${idPagamento}: ${mensagemDe(erro)}`);
     }
@@ -292,7 +298,7 @@ function precisaAcertar(pedido: PedidoResumo, pagamento: Pagamento) {
   if (ESTORNOS.includes(pagamento.status)) {
     if (pedido.pagamento_status === pagamento.status) return false;
     if (pedido.pagamento_id === idPagamento) return true;
-    return PAGOS.includes(pedido.status) && !["approved", "valor_divergente"].includes(pedido.pagamento_status ?? "");
+    return PAGOS.includes(pedido.status) && !REGISTRADOS.includes(pedido.pagamento_status ?? "");
   }
   return false;
 }

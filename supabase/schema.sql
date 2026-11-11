@@ -60,10 +60,11 @@ begin
   if not exists (select 1 from information_schema.columns
                   where table_schema = 'public' and table_name = 'pedidos' and column_name = 'pagamentos_vistos') then
     alter table public.pedidos add column pagamentos_vistos text[] not null default '{}';
+    -- conflito cuja situação o vencimento ou um cancelamento antigo trocou ('expirado', 'substituido', 'rejected'...)
     update public.pedidos set pagamentos_vistos = array[pagamento_id]
      where pagamento_id is not null
        and (pagamento_status in ('approved', 'valor_divergente')
-            or (pagamento_status = 'expirado'
+            or (coalesce(pagamento_status, '') not in ('pending', 'in_process', 'authorized')
                 and (observacoes like '%ATENÇÃO: pagamento de R$ % menor que o total%'
                      or observacoes like '%ATENÇÃO: pagamento aprovado num pedido que a equipe cancelou%'
                      or observacoes like '%ATENÇÃO: pago depois que a reserva venceu%')));
@@ -405,8 +406,9 @@ $$;
 
 -- Estorno, devolução ou disputa de um pagamento no Mercado Pago. Devolve:
 --   a situação do pedido antes (pago/enviado/entregue): marcou 'NÃO ENVIAR' e aviso_pendente = 'estorno';
---   'outro_pagamento': o pedido tem OUTRO pagamento aprovado registrado (cliente que pagou duas vezes); o pedido
---         continua valendo e, se está pago, ganha uma nota;
+--   'outro_pagamento': é de outro pagamento, não do que o pedido registrou. Pedido não pago: qualquer outro (o
+--         registrado pode ser um Pix novo ainda pendente). Pedido pago: só quando o registrado é um pagamento que foi
+--         aprovado (cliente que pagou duas vezes); o pedido continua valendo e ganha uma nota;
 --   null: pedido não pago (conflito ou cancelado: só anota a situação, para o painel não deixar marcar como pago um
 --         pagamento devolvido) ou o mesmo estorno avisado de novo.
 -- Pedido pago sem pagamento aprovado registrado (marcado como pago à mão no painel) fica com o lado seguro: 'NÃO ENVIAR'.
@@ -426,7 +428,8 @@ begin
   if ped.id is null then return null; end if;
 
   if id_pagamento is not null and ped.pagamento_id is not null and ped.pagamento_id <> id_pagamento
-     and ped.pagamento_status in ('approved', 'valor_divergente') then
+     and (ped.status not in ('pago', 'enviado', 'entregue')
+          or ped.pagamento_status in ('approved', 'valor_divergente', 'refunded', 'charged_back', 'in_mediation')) then
     nota := format('Pagamento extra %s ficou %s no Mercado Pago; o pedido continua valendo.', id_pagamento, situacao);
     if ped.status in ('pago', 'enviado', 'entregue') and position(nota in coalesce(ped.observacoes, '')) = 0 then
       update pedidos set observacoes = trim(both ' ' from coalesce(observacoes, '') || ' ' || nota), atualizado_em = now()
