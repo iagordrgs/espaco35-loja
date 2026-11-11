@@ -69,7 +69,8 @@ Ordem ao publicar esta versão:
 1. Espere o deploy dela ficar **Ready** em Deployments.
 2. Logo depois, rode o `supabase/schema.sql` de novo. Ele guarda os pagamentos já tratados de cada pedido (aviso repetido
    não anota nem avisa de novo), marca o e-mail que não saiu (o painel mostra) e só deixa um estorno valer para o
-   pagamento que pagou o pedido.
+   pagamento que pagou o pedido. Até ele rodar, um pagamento em conflito pode gerar o e-mail CONFERIR duas vezes, e a
+   conferência diária não acerta nada: só avisa no resumo que falta rodar o schema.
 3. Depois de rodar o schema, não volte para um deploy anterior a este (Instant Rollback): a versão antiga não conhece
    a volta da cliente (`/api/mercadopago/retorno`) nem limpa a marca de e-mail.
 

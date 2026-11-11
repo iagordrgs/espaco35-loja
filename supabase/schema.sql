@@ -52,11 +52,23 @@ alter table public.pedidos add column if not exists cliente_ip_hash text;       
 alter table public.pedidos add column if not exists rastreio text;                               -- código de rastreio ou como foi entregue (Uber Flash, retirado)
 alter table public.pedidos add column if not exists link_pagamento text;                         -- link do Mercado Pago gerado pelo painel para venda pelo WhatsApp/direct
 alter table public.pedidos add column if not exists aviso_pendente text;                         -- e-mail para a equipe que ainda não saiu: pago, conferir ou estorno
-alter table public.pedidos add column if not exists pagamentos_vistos text[] not null default '{}'; -- pagamentos aprovados já tratados (pago ou conflito avisado)
--- Pedidos de antes da coluna pagamentos_vistos: o pagamento já tratado (pedido pago ou conflito avisado) conta como visto.
-update public.pedidos set pagamentos_vistos = array[pagamento_id]
- where pagamento_id is not null and pagamentos_vistos = '{}'
-   and (status in ('pago', 'enviado', 'entregue') or pagamento_status in ('approved', 'valor_divergente') or observacoes like '%ATENÇÃO: pag%');
+-- pagamentos_vistos: pagamentos aprovados já tratados (pedido pago ou conflito avisado). Criada uma vez só; ao criar,
+-- os pedidos de antes recebem só o pagamento aprovado que já foi tratado (nunca um Pix ainda pendente). Os conflitos
+-- que o vencimento antigo marcou como 'expirado' são achados pela observação exata que o banco escreve.
+do $$
+begin
+  if not exists (select 1 from information_schema.columns
+                  where table_schema = 'public' and table_name = 'pedidos' and column_name = 'pagamentos_vistos') then
+    alter table public.pedidos add column pagamentos_vistos text[] not null default '{}';
+    update public.pedidos set pagamentos_vistos = array[pagamento_id]
+     where pagamento_id is not null
+       and (pagamento_status in ('approved', 'valor_divergente')
+            or (pagamento_status = 'expirado'
+                and (observacoes like '%ATENÇÃO: pagamento de R$ % menor que o total%'
+                     or observacoes like '%ATENÇÃO: pagamento aprovado num pedido que a equipe cancelou%'
+                     or observacoes like '%ATENÇÃO: pago depois que a reserva venceu%')));
+  end if;
+end $$;
 
 -- Equipe: só quem está nesta lista mexe no painel. Ter conta no Supabase não basta.
 -- Para incluir alguém: insert into public.equipe (user_id, email) select id, email from auth.users where email = 'pessoa@exemplo.com';
@@ -373,6 +385,7 @@ end;
 $$;
 
 -- Pagamento do site recusado/cancelado: cancela o pedido (se ainda não foi pago) e devolve os pares.
+-- Pagamento aprovado de pedido em conflito continua registrado (como em cancelar_expirados).
 create or replace function public.cancelar_pedido_site(pedido bigint, situacao text)
 returns void
 language plpgsql
@@ -380,7 +393,8 @@ security invoker
 set search_path = public
 as $$
 begin
-  update pedidos set status = 'cancelado', pagamento_status = situacao, atualizado_em = now()
+  update pedidos set status = 'cancelado', atualizado_em = now(),
+         pagamento_status = case when pagamento_status in ('approved', 'valor_divergente') then pagamento_status else situacao end
    where id = pedido and origem = 'site' and status = 'novo';
   if found then
     update estoque set status = 'disponivel', pedido_id = null, reservado_ate = null, atualizado_em = now()
@@ -389,12 +403,13 @@ begin
 end;
 $$;
 
--- Estorno, devolução ou disputa de um pagamento no Mercado Pago. Vale só para o pagamento que o pedido registrou
--- (pagamento_id). Devolve:
+-- Estorno, devolução ou disputa de um pagamento no Mercado Pago. Devolve:
 --   a situação do pedido antes (pago/enviado/entregue): marcou 'NÃO ENVIAR' e aviso_pendente = 'estorno';
---   'outro_pagamento': é de outro pagamento do mesmo pedido (cliente que pagou duas vezes); pedido pago só ganha a nota;
+--   'outro_pagamento': o pedido tem OUTRO pagamento aprovado registrado (cliente que pagou duas vezes); o pedido
+--         continua valendo e, se está pago, ganha uma nota;
 --   null: pedido não pago (conflito ou cancelado: só anota a situação, para o painel não deixar marcar como pago um
 --         pagamento devolvido) ou o mesmo estorno avisado de novo.
+-- Pedido pago sem pagamento aprovado registrado (marcado como pago à mão no painel) fica com o lado seguro: 'NÃO ENVIAR'.
 -- Sem id_pagamento (código antigo) vale para o pedido, como antes.
 drop function if exists public.registrar_estorno(bigint, text);
 create or replace function public.registrar_estorno(pedido bigint, situacao text, id_pagamento text default null)
@@ -410,7 +425,8 @@ begin
   select * into ped from pedidos where id = pedido for update;
   if ped.id is null then return null; end if;
 
-  if id_pagamento is not null and ped.pagamento_id is distinct from id_pagamento then
+  if id_pagamento is not null and ped.pagamento_id is not null and ped.pagamento_id <> id_pagamento
+     and ped.pagamento_status in ('approved', 'valor_divergente') then
     nota := format('Pagamento extra %s ficou %s no Mercado Pago; o pedido continua valendo.', id_pagamento, situacao);
     if ped.status in ('pago', 'enviado', 'entregue') and position(nota in coalesce(ped.observacoes, '')) = 0 then
       update pedidos set observacoes = trim(both ' ' from coalesce(observacoes, '') || ' ' || nota), atualizado_em = now()

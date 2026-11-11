@@ -124,9 +124,10 @@ async function registrarEstorno(admin: SupabaseClient, idPedido: number, situaca
   const { data, error } = await admin.rpc("registrar_estorno", { pedido: idPedido, situacao, id_pagamento: idPagamento });
   if (!error) return data as string | null;
   if (error.code !== "PGRST202") throw new ErroBanco("registrar_estorno", error);
-  const { data: p, error: erroLer } = await admin.from("pedidos").select("pagamento_id").eq("id", idPedido).maybeSingle();
+  const { data: p, error: erroLer } = await admin.from("pedidos").select("pagamento_id,pagamento_status").eq("id", idPedido).maybeSingle();
   if (erroLer) throw new ErroBanco("ler o pedido do estorno", erroLer);
-  if (p?.pagamento_id && p.pagamento_id !== idPagamento) return "outro_pagamento";
+  // mesma regra do banco novo: só é "outro" se o pedido tem outro pagamento aprovado registrado
+  if (p?.pagamento_id && p.pagamento_id !== idPagamento && ["approved", "valor_divergente"].includes(p.pagamento_status ?? "")) return "outro_pagamento";
   return rpc(admin, "registrar_estorno", { pedido: idPedido, situacao });
 }
 
@@ -199,9 +200,10 @@ async function limparMarca(admin: SupabaseClient, idPedido: number, tipo: string
 }
 
 // O aviso marcado ainda faz sentido? A equipe pode ter enviado, cancelado ou reembolsado depois da marca.
+// Conflito ('conferir') vale até o pedido ficar pago ou o reembolso ser registrado: o dinheiro continua retido.
 function avisoAindaVale(tipo: string, status: string, situacao: string | null) {
   if (tipo === "pago") return status === "pago" && situacao === "approved";
-  if (tipo === "conferir") return !PAGOS.includes(status) && ["approved", "valor_divergente"].includes(situacao ?? "");
+  if (tipo === "conferir") return !PAGOS.includes(status) && !ESTORNOS.includes(situacao ?? "");
   if (tipo === "estorno") return PAGOS.includes(status) && ESTORNOS.includes(situacao ?? "");
   return false;
 }
@@ -243,7 +245,10 @@ async function acertarPagamentos(admin: SupabaseClient, agora: Date, resumo: Res
 
   const ids = [...new Set(pagamentos.map((p) => Number(p.external_reference)).filter((n) => Number.isSafeInteger(n) && n > 0))];
   if (ids.length === 0) return;
-  const { data, error } = await admin.from("pedidos").select("id,status,pagamento_id,pagamento_status").in("id", ids);
+  // pagamentos_vistos só existe com o schema.sql novo: sem ele, reaplicar pagamentos repetiria avisos e conflitos
+  const { data, error } = await admin.from("pedidos").select("id,status,pagamento_id,pagamento_status,pagamentos_vistos").in("id", ids);
+  if (error && /pagamentos_vistos/.test(error.message))
+    throw new Error("Falta rodar o supabase/schema.sql novo no Supabase: a conferência só acerta pagamentos depois disso.");
   if (error) throw new ErroBanco("ler os pedidos da conferência", error);
   const pedidos = new Map(((data ?? []) as PedidoResumo[]).map((p) => [p.id, p]));
 
@@ -254,7 +259,7 @@ async function acertarPagamentos(admin: SupabaseClient, agora: Date, resumo: Res
     const idPagamento = String(pagamento.id);
     if (pagamento.status === "approved" && PAGOS.includes(pedido.status) && pedido.pagamento_id !== idPagamento) {
       resumo.suspeitas.push(
-        pedido.pagamento_id
+        pedido.pagamento_id && pedido.pagamento_status === "approved"
           ? `Pedido #${pedido.id}: já estava pago pelo pagamento ${pedido.pagamento_id} e tem também o pagamento ${idPagamento} aprovado. Confira no Mercado Pago se a cliente pagou duas vezes.`
           : `Pedido #${pedido.id}: foi marcado como pago no painel e tem o pagamento ${idPagamento} aprovado no Mercado Pago. Confira se a cliente pagou duas vezes.`,
       );
@@ -282,9 +287,12 @@ function precisaAcertar(pedido: PedidoResumo, pagamento: Pagamento) {
     const registrado = pedido.pagamento_id === idPagamento && ["approved", "valor_divergente"].includes(pedido.pagamento_status ?? "");
     return !PAGOS.includes(pedido.status) && !registrado;
   }
-  // estorno, devolução ou disputa do pagamento que pagou o pedido: vira "NÃO ENVIAR"
+  // estorno, devolução ou disputa ainda não anotado: do pagamento do pedido (pago vira "NÃO ENVIAR"; não pago só anota)
+  // ou de pedido pago sem pagamento aprovado registrado (marcado à mão no painel: o banco fica com o lado seguro)
   if (ESTORNOS.includes(pagamento.status)) {
-    return PAGOS.includes(pedido.status) && pedido.pagamento_id === idPagamento && pedido.pagamento_status !== pagamento.status;
+    if (pedido.pagamento_status === pagamento.status) return false;
+    if (pedido.pagamento_id === idPagamento) return true;
+    return PAGOS.includes(pedido.status) && !["approved", "valor_divergente"].includes(pedido.pagamento_status ?? "");
   }
   return false;
 }
