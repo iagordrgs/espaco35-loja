@@ -4,6 +4,7 @@ import { InvalidWebhookSignatureError, WebhookSignatureValidator } from "mercado
 // Mercado Pago (Checkout Pro: Pix e cartão). Usado pelo checkout do site e pelo link de pagamento do painel. Variáveis na Vercel:
 //   MERCADOPAGO_ACCESS_TOKEN    Suas integrações > aplicação > Credenciais de produção (APP_USR-...)
 //   MERCADOPAGO_WEBHOOK_SECRET  Suas integrações > aplicação > Webhooks > assinatura secreta
+//   CRON_SECRET                 texto aleatório longo: só a Vercel Cron chama a conferência diária (src/lib/pagamentos.ts)
 //   MERCADOPAGO_API             só para testes locais (padrão https://api.mercadopago.com)
 const API = process.env.MERCADOPAGO_API ?? "https://api.mercadopago.com";
 
@@ -58,10 +59,25 @@ export function criarPreferencia(corpo: {
   });
 }
 
+export type Pagamento = { id: number; status: string; status_detail?: string; external_reference?: string; transaction_amount?: number; currency_id?: string };
+
 export function buscarPagamento(id: string) {
-  return chamar<{ id: number; status: string; status_detail?: string; external_reference?: string; transaction_amount?: number; currency_id?: string }>(
-    `/v1/payments/${encodeURIComponent(id)}`,
-  );
+  return chamar<Pagamento>(`/v1/payments/${encodeURIComponent(id)}`);
+}
+
+// Pagamentos que mudaram de situação entre duas datas (aprovados, estornados...), do mais recente para o mais antigo.
+// Usado pela conferência diária: pega o que o aviso do Mercado Pago não conseguiu registrar.
+export function buscarPagamentosAlterados(desde: Date, ate: Date, offset = 0) {
+  const filtro = new URLSearchParams({
+    range: "date_last_updated",
+    begin_date: desde.toISOString(),
+    end_date: ate.toISOString(),
+    sort: "date_last_updated",
+    criteria: "desc",
+    limit: "100",
+    offset: String(offset),
+  });
+  return chamar<{ paging?: { total?: number }; results?: Pagamento[] }>(`/v1/payments/search?${filtro}`);
 }
 
 // Cancela um pagamento ainda pendente (Pix gerado e não pago): usado quando outra cliente levou o par antes.

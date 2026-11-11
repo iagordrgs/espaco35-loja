@@ -22,7 +22,7 @@ function mensagemLink(p: Pedido, link: string) {
 Pix ou cartão em até 6x (com juros).${prazo} Equipe Espaço 35 🤍`;
 }
 
-// Só aceita link do próprio Mercado Pago (o endereço da página pode ser editado por quem está logado).
+// O link vem só do banco (gravado ao gerar) e só vale se for do próprio Mercado Pago.
 const linkValido = (v: unknown) => typeof v === "string" && /^https:\/\/(www|sandbox)\.mercadopago\.com(\.br)?\//.test(v) ? v : null;
 
 // Próximos passos possíveis a partir de cada situação.
@@ -42,16 +42,15 @@ const ROTULO_BOTAO: Record<StatusPedido, string> = {
   cancelado: "Cancelar e devolver ao estoque",
 };
 
-export default async function PedidoPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ link?: string }> }) {
+export default async function PedidoPage({ params }: { params: Promise<{ id: string }> }) {
   const { supabase } = await exigirUsuario();
   const { id } = await params;
-  const { link: linkRecente } = await searchParams;
   const { data } = await supabase.from("pedidos").select("*").eq("id", Number(id)).maybeSingle();
   if (!data) notFound();
   const pedido = data as Pedido;
   const whats = whatsCliente(pedido.cliente_telefone);
   const agora = agoraMs();
-  const linkPagamento = linkValido(linkRecente) ?? linkValido(pedido.link_pagamento);
+  const linkPagamento = linkValido(pedido.link_pagamento);
   const aguardandoLink = pedido.status === "novo" && pedido.origem !== "site";
 
   return (
@@ -112,6 +111,9 @@ CEP ${pedido.endereco.cep ?? ""}`}</p>
           )}
           {pedido.origem !== "site" && pedido.pagamento_id && (
             <p className="painel-sub">Mercado Pago #{pedido.pagamento_id} · {pedido.pagamento_status ?? ""}</p>
+          )}
+          {pedido.aviso_pendente && (
+            <p className="painel-sub">⚠️ O aviso por e-mail deste pedido ainda não saiu. A conferência diária tenta de novo; confira o pedido por aqui.</p>
           )}
 
           {aguardandoLink && (

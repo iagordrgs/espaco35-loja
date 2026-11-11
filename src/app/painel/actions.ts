@@ -154,7 +154,7 @@ export async function gerarLinkPagamento(form: FormData) {
         ...pedido.itens.map((i) => ({ id: i.slug, title: `${i.nome} · tam. 35`, quantity: 1, unit_price: Number(i.preco), currency_id: "BRL" as const })),
         ...(Number(pedido.frete) > 0 ? [{ id: "frete", title: `Frete · ${pedido.entrega || "entrega"}`, quantity: 1, unit_price: Number(pedido.frete), currency_id: "BRL" as const }] : []),
       ];
-  const voltar = `${SITE_URL}/pedido/${pedido.codigo_publico}`;
+  const voltar = `${SITE_URL}/api/mercadopago/retorno/${pedido.codigo_publico}`; // confere o pagamento e mostra o pedido
 
   const preferencia = await criarPreferencia({
     idempotencia: `pedido-${pedido.id}-${Date.now()}`,
@@ -168,10 +168,9 @@ export async function gerarLinkPagamento(form: FormData) {
   const usarSandbox = process.env.MERCADOPAGO_SANDBOX === "1" && preferencia.sandbox_init_point;
   const link = usarSandbox ? preferencia.sandbox_init_point! : preferencia.init_point;
 
-  const agora = new Date().toISOString();
-  const { error } = await supabase.from("pedidos").update({ link_pagamento: link, pagamento: "Link de pagamento (Mercado Pago)", atualizado_em: agora }).eq("id", id);
-  // Banco ainda sem a coluna link_pagamento (schema.sql antigo): guarda só a forma de pagamento; o link vai na tela.
-  if (error) await supabase.from("pedidos").update({ pagamento: "Link de pagamento (Mercado Pago)", atualizado_em: agora }).eq("id", id);
+  const { error } = await supabase.from("pedidos").update({ link_pagamento: link, pagamento: "Link de pagamento (Mercado Pago)", atualizado_em: new Date().toISOString() }).eq("id", id);
+  if (error) throw new Error("O link foi criado no Mercado Pago, mas não ficou salvo no pedido. Gere de novo.");
   revalidatePath("/painel", "layout");
-  redirect(`/painel/pedidos/${id}?link=${encodeURIComponent(link)}`);
+  // a página mostra só o link salvo no banco: um link no endereço da página poderia ser de outra conta
+  redirect(`/painel/pedidos/${id}`);
 }

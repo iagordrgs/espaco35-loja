@@ -53,6 +53,20 @@ O aplicativo do Mercado Pago também avisa no celular a cada pagamento recebido.
 Vercel > projeto **espaco35-loja** > **Settings > Environment Variables**: cadastre todas as variáveis do `.env.example`
 (ambiente **Production**). Depois, em **Deployments**, faça **Redeploy** do último deploy para elas valerem.
 
+## 6. Conferência diária dos pagamentos (plano B do aviso)
+
+Se o aviso do Mercado Pago falhar (assinatura secreta errada, banco fora do ar), o pagamento ainda é registrado:
+- quando a cliente volta do Mercado Pago para o site, o pagamento é conferido na API antes de a página do pedido abrir;
+- uma vez por dia, às 10h de Fortaleza, a Vercel roda a conferência (horário em `vercel.json`): compara com os pedidos
+  os pagamentos que mudaram nos últimos 4 dias, registra o que faltou (aprovado que ficou aguardando, estorno de pedido pago),
+  reenvia os e-mails que não saíram e manda um resumo para a equipe quando acerta ou estranha algo (ex.: cliente que pagou duas vezes).
+
+Para ligar: cadastre na Vercel `CRON_SECRET` com um texto aleatório de pelo menos 16 caracteres (gere num gerenciador de senhas)
+e faça **Redeploy**. Sem essa variável, a conferência diária fica desligada; a conferência na volta da cliente funciona sem ela.
+
+Depois de publicar esta versão, rode o `supabase/schema.sql` de novo: ele cria a marca de e-mail pendente
+(o pedido mostra no painel quando o e-mail não saiu) e evita aviso repetido do mesmo pagamento.
+
 ## Como funciona depois de ativo
 
 1. A cliente informa o CEP: o endereço é preenchido e o frete aparece (Fortaleza R$ 15 ou retirada grátis; Brasil pelo Melhor Envio).
@@ -60,7 +74,7 @@ Vercel > projeto **espaco35-loja** > **Settings > Environment Variables**: cadas
    quando o Mercado Pago avisa que a cliente gerou o Pix ou enviou o cartão. O Pix vence junto com o pedido.
    Se duas clientes gerarem o Pix do mesmo par, a segunda tem o pagamento cancelado no Mercado Pago e vê o aviso no site.
 3. Pagamento aprovado: o pedido vira **Pago** no painel, os pares ficam **Vendidos** e a equipe recebe o e-mail
-   com itens e endereço para enviar.
+   com itens e endereço para enviar. Se o e-mail não sair, o pedido mostra o alerta no painel e a conferência diária reenvia.
 4. Pagamento recusado ou não feito em 30 minutos: o pedido é cancelado e os pares (se chegaram a ser reservados) voltam ao site sozinhos.
 5. Caso raro: se um Pix for pago depois da reserva vencer e o par já tiver ido para outra cliente, o pedido fica
    marcado no painel com **ATENÇÃO** para reembolso ou troca, e o e-mail chega com "CONFERIR" no assunto.

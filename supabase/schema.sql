@@ -51,6 +51,7 @@ alter table public.pedidos add column if not exists pagamento_status text;      
 alter table public.pedidos add column if not exists cliente_ip_hash text;                        -- hash do IP: limita reservas abertas por aparelho
 alter table public.pedidos add column if not exists rastreio text;                               -- código de rastreio ou como foi entregue (Uber Flash, retirado)
 alter table public.pedidos add column if not exists link_pagamento text;                         -- link do Mercado Pago gerado pelo painel para venda pelo WhatsApp/direct
+alter table public.pedidos add column if not exists aviso_pendente text;                         -- e-mail para a equipe que ainda não saiu: pago, conferir ou estorno
 
 -- Equipe: só quem está nesta lista mexe no painel. Ter conta no Supabase não basta.
 -- Para incluir alguém: insert into public.equipe (user_id, email) select id, email from auth.users where email = 'pessoa@exemplo.com';
@@ -130,7 +131,10 @@ declare
   qtd integer;
 begin
   with vencidos as (
-    update pedidos set status = 'cancelado', pagamento_status = 'expirado', atualizado_em = now()
+    -- pagamento aprovado num pedido em conflito continua registrado (a equipe confere e reembolsa): sem isso,
+    -- a volta da cliente e a conferência diária achariam que o pagamento é novo e avisariam o conflito de novo
+    update pedidos set status = 'cancelado', atualizado_em = now(),
+           pagamento_status = case when pagamento_status in ('approved', 'valor_divergente') then pagamento_status else 'expirado' end
      where status = 'novo' and expira_em is not null and expira_em < now()
     returning id
   )
@@ -299,9 +303,11 @@ begin
 end;
 $$;
 
--- Pagamento do site aprovado (chamado pelo aviso do Mercado Pago, com a chave de serviço).
--- Devolve 'ok', 'ja_pago' ou 'conflito' (conferir: par já foi para outra cliente, pedido cancelado pela equipe
--- ou valor pago menor que o total). Em 'conflito' o pedido NÃO vira pago e ganha uma observação para a equipe.
+-- Pagamento aprovado (aviso do Mercado Pago, volta da cliente ou conferência diária; sempre com a chave de serviço).
+-- Devolve 'ok', 'ja_pago', 'ja_registrado' (este mesmo pagamento já foi anotado num conflito) ou 'conflito' (conferir:
+-- par já foi para outra cliente, pedido cancelado pela equipe ou valor pago menor que o total). Em 'conflito' o pedido
+-- NÃO vira pago e ganha uma observação para a equipe. Em 'ok' e 'conflito' marca aviso_pendente ('pago' ou
+-- 'conferir'): o site tira a marca quando o e-mail para a equipe sai, e a conferência diária reenvia o que ficou.
 drop function if exists public.confirmar_pagamento(bigint, text);
 drop function if exists public.confirmar_pagamento(bigint, text, numeric);
 create or replace function public.confirmar_pagamento(pedido bigint, id_pagamento text, valor numeric)
@@ -317,16 +323,21 @@ begin
   select * into ped from pedidos where id = pedido for update;
   if ped.id is null then raise exception 'Pedido % não encontrado.', pedido; end if;
   if ped.status in ('pago', 'enviado', 'entregue') then return 'ja_pago'; end if;
+  -- o mesmo pagamento de novo (o Mercado Pago repete o aviso; a volta da cliente e a conferência também consultam):
+  -- o conflito já foi anotado e avisado uma vez
+  if ped.pagamento_id = id_pagamento and ped.pagamento_status in ('approved', 'valor_divergente') then
+    return 'ja_registrado';
+  end if;
 
   if valor is null or valor + 0.01 < ped.total then
-    update pedidos set pagamento_id = id_pagamento, pagamento_status = 'valor_divergente', atualizado_em = now(),
+    update pedidos set pagamento_id = id_pagamento, pagamento_status = 'valor_divergente', aviso_pendente = 'conferir', atualizado_em = now(),
            observacoes = trim(both ' ' from coalesce(observacoes, '') || format(' ATENÇÃO: pagamento de R$ %s menor que o total R$ %s. Não enviar.', valor, ped.total))
      where id = pedido;
     return 'conflito';
   end if;
 
   if ped.status = 'cancelado' and coalesce(ped.pagamento_status, '') not in ('expirado', 'rejected', 'cancelled', 'erro_checkout') then
-    update pedidos set pagamento_id = id_pagamento, pagamento_status = 'approved', atualizado_em = now(),
+    update pedidos set pagamento_id = id_pagamento, pagamento_status = 'approved', aviso_pendente = 'conferir', atualizado_em = now(),
            observacoes = trim(both ' ' from coalesce(observacoes, '') || ' ATENÇÃO: pagamento aprovado num pedido que a equipe cancelou. Conferir antes de enviar ou reembolsar.')
      where id = pedido;
     return 'conflito';
@@ -337,14 +348,14 @@ begin
   perform 1 from estoque where slug = any(slugs) for update;
   if exists (select 1 from estoque e where e.slug = any(slugs)
               and e.pedido_id is distinct from pedido and not par_livre(e)) then
-    update pedidos set pagamento_id = id_pagamento, pagamento_status = 'approved', atualizado_em = now(),
+    update pedidos set pagamento_id = id_pagamento, pagamento_status = 'approved', aviso_pendente = 'conferir', atualizado_em = now(),
            observacoes = trim(both ' ' from coalesce(observacoes, '') || ' ATENÇÃO: pago depois que a reserva venceu e algum par já foi para outra cliente. Reembolsar ou oferecer troca.')
      where id = pedido;
     return 'conflito';
   end if;
 
   update pedidos set status = 'pago', pagamento_id = id_pagamento, pagamento_status = 'approved',
-         expira_em = null, atualizado_em = now()
+         aviso_pendente = 'pago', expira_em = null, atualizado_em = now()
    where id = pedido;
   update estoque set status = 'vendido', pedido_id = pedido, reservado_ate = null, atualizado_em = now()
    where slug = any(slugs);
@@ -369,8 +380,9 @@ begin
 end;
 $$;
 
--- Estorno, devolução ou disputa no Mercado Pago depois do pedido pago: marca 'NÃO ENVIAR'.
--- Devolve a situação do pedido antes (para o aviso), ou null se ele ainda não estava pago.
+-- Estorno, devolução ou disputa no Mercado Pago depois do pedido pago: marca 'NÃO ENVIAR' e aviso_pendente = 'estorno'.
+-- Devolve a situação do pedido antes (para o aviso), ou null se ele ainda não estava pago ou se este mesmo
+-- estorno já tinha sido anotado (aviso repetido do Mercado Pago).
 create or replace function public.registrar_estorno(pedido bigint, situacao text)
 returns text
 language plpgsql
@@ -379,10 +391,12 @@ set search_path = public
 as $$
 declare
   antes text;
+  situacao_antes text;
 begin
-  select status into antes from pedidos where id = pedido and status in ('pago', 'enviado', 'entregue') for update;
-  if antes is null then return null; end if;
-  update pedidos set pagamento_status = situacao, atualizado_em = now(),
+  select status, pagamento_status into antes, situacao_antes
+    from pedidos where id = pedido and status in ('pago', 'enviado', 'entregue') for update;
+  if antes is null or situacao_antes is not distinct from situacao then return null; end if;
+  update pedidos set pagamento_status = situacao, aviso_pendente = 'estorno', atualizado_em = now(),
          observacoes = trim(both ' ' from coalesce(observacoes, '') || format(' NÃO ENVIAR: pagamento %s no Mercado Pago.', situacao))
    where id = pedido;
   return antes;

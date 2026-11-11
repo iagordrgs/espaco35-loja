@@ -108,7 +108,8 @@ export async function POST(request: Request) {
   }
 
   const { data: pedido } = await admin.from("pedidos").select("codigo_publico").eq("id", idPedido).single();
-  const voltar = `${SITE_URL}/pedido/${pedido?.codigo_publico}`;
+  // a volta passa pela conferência do pagamento e depois mostra /pedido/<código>
+  const voltar = `${SITE_URL}/api/mercadopago/retorno/${pedido?.codigo_publico}`;
 
   try {
     const preferencia = await criarPreferencia({
@@ -124,7 +125,8 @@ export async function POST(request: Request) {
           currency_id: "BRL" as const,
           picture_url: `${SITE_URL}${p.images[0]}`,
         })),
-        { id: "frete", title: `Frete · ${frete.nome}`, quantity: 1, unit_price: frete.preco, currency_id: "BRL" as const },
+        // retirada grátis não vai como linha de R$ 0 (como no link do painel)
+        ...(frete.preco > 0 ? [{ id: "frete", title: `Frete · ${frete.nome}`, quantity: 1, unit_price: frete.preco, currency_id: "BRL" as const }] : []),
       ],
       back_urls: { success: voltar, pending: voltar, failure: voltar },
       notification_url: `${SITE_URL}/api/mercadopago/webhook`,

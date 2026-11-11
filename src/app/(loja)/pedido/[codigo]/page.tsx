@@ -19,8 +19,9 @@ export default async function PedidoPage({ params, searchParams }: { params: Pro
   const { data: p } = await admin.from("pedidos").select("id,status,itens,frete,total,entrega,pagamento_status,origem,expira_em").eq("codigo_publico", codigo).maybeSingle();
   if (!p) notFound();
 
-  // A situação vem só do banco (atualizado pelo aviso assinado do Mercado Pago). O status no endereço da volta
-  // (collection_status) pode ser editado por qualquer um: serve só para mostrar "confirmando" enquanto o aviso chega.
+  // A situação vem só do banco (atualizado pelo aviso assinado do Mercado Pago ou pela volta da cliente, que passa por
+  // /api/mercadopago/retorno e confere o pagamento na API). O status no endereço da volta (collection_status) pode ser
+  // editado por qualquer um: serve só para mostrar "confirmando" enquanto o pagamento é registrado.
   const retorno = collection_status ?? voltaStatus;
   const pago = ["pago", "enviado", "entregue"].includes(p.status);
   const aguardando = !pago && p.status === "novo";

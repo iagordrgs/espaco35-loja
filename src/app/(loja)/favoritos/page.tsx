@@ -2,12 +2,19 @@
 
 import Link from "next/link";
 import ProductCard from "@/components/ProductCard";
+import { useEstoque } from "@/context/EstoqueContext";
 import { useFavorites } from "@/context/FavoritesContext";
 import { products } from "@/data/products";
+import { aplicarEstoque } from "@/lib/estoque-regras";
 
 export default function FavoritosPage() {
   const { hydrated, slugs, clear } = useFavorites();
-  const favorites = slugs.map((slug) => products.find((product) => product.slug === slug)).filter((product) => product !== undefined);
+  const estoque = useEstoque();
+  // com a situação de agora no painel (vendido ou reservado), como a sacola
+  const favorites = slugs
+    .map((slug) => products.find((product) => product.slug === slug))
+    .filter((product) => product !== undefined)
+    .map((product) => aplicarEstoque(product, estoque));
 
   if (!hydrated) return <main className="empty-page" aria-busy="true" />;
 
