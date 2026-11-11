@@ -13,8 +13,10 @@ export async function POST(request: Request) {
   const dataId = url.searchParams.get("data.id") ?? (corpo?.data?.id != null ? String(corpo.data.id) : null);
 
   if (!assinaturaValida(request.headers.get("x-signature"), request.headers.get("x-request-id"), dataId)) {
-    // com a assinatura secreta errada na Vercel, todo aviso cai aqui: a volta da cliente e a conferência seguram
-    registrar("aviso", "aviso com assinatura inválida", { tipo, pagamento: dataId });
+    // com a assinatura secreta errada na Vercel, todo aviso cai aqui: a volta da cliente e a conferência seguram.
+    // Sem assinatura, o corpo pode ser qualquer coisa: no log só entram valores curtos e simples.
+    const limpo = (v: unknown) => (typeof v === "string" && /^[\w.-]{1,40}$/.test(v) ? v : "invalido");
+    registrar("aviso", "aviso com assinatura inválida", { tipo: limpo(tipo), pagamento: limpo(dataId) });
     return new Response("assinatura inválida", { status: 401 });
   }
   if (tipo !== "payment" || !dataId) return new Response("ok");

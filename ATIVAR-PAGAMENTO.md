@@ -63,9 +63,15 @@ Se o aviso do Mercado Pago falhar (assinatura secreta errada, banco fora do ar),
 
 Para ligar: cadastre na Vercel `CRON_SECRET` com um texto aleatório de pelo menos 16 caracteres (gere num gerenciador de senhas)
 e faça **Redeploy**. Sem essa variável, a conferência diária fica desligada; a conferência na volta da cliente funciona sem ela.
+O resumo e o reenvio de e-mails dependem do passo 4. Sem ele, o resumo fica só nos logs da Vercel.
 
-Depois de publicar esta versão, rode o `supabase/schema.sql` de novo: ele cria a marca de e-mail pendente
-(o pedido mostra no painel quando o e-mail não saiu) e evita aviso repetido do mesmo pagamento.
+Ordem ao publicar esta versão:
+1. Espere o deploy dela ficar **Ready** em Deployments.
+2. Logo depois, rode o `supabase/schema.sql` de novo. Ele guarda os pagamentos já tratados de cada pedido (aviso repetido
+   não anota nem avisa de novo), marca o e-mail que não saiu (o painel mostra) e só deixa um estorno valer para o
+   pagamento que pagou o pedido.
+3. Depois de rodar o schema, não volte para um deploy anterior a este (Instant Rollback): a versão antiga não conhece
+   a volta da cliente (`/api/mercadopago/retorno`) nem limpa a marca de e-mail.
 
 ## Como funciona depois de ativo
 

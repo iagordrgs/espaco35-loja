@@ -6,6 +6,8 @@ import "server-only";
 //   EMAIL_REMETENTE  remetente verificado no Resend (ex.: "Espaço 35 <pedidos@seudominio.com.br>");
 //                    sem domínio próprio, use "Espaço 35 <onboarding@resend.dev>" (só envia para o e-mail da conta)
 // Sem as variáveis, não envia nada: o pedido continua aparecendo no painel.
+export const emailConfigurado = () => Boolean(process.env.RESEND_API_KEY && process.env.EMAIL_EQUIPE);
+
 export async function avisarEquipe(assunto: string, html: string): Promise<boolean> {
   const chave = process.env.RESEND_API_KEY;
   const para = process.env.EMAIL_EQUIPE;

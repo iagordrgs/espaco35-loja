@@ -52,6 +52,11 @@ alter table public.pedidos add column if not exists cliente_ip_hash text;       
 alter table public.pedidos add column if not exists rastreio text;                               -- código de rastreio ou como foi entregue (Uber Flash, retirado)
 alter table public.pedidos add column if not exists link_pagamento text;                         -- link do Mercado Pago gerado pelo painel para venda pelo WhatsApp/direct
 alter table public.pedidos add column if not exists aviso_pendente text;                         -- e-mail para a equipe que ainda não saiu: pago, conferir ou estorno
+alter table public.pedidos add column if not exists pagamentos_vistos text[] not null default '{}'; -- pagamentos aprovados já tratados (pago ou conflito avisado)
+-- Pedidos de antes da coluna pagamentos_vistos: o pagamento já tratado (pedido pago ou conflito avisado) conta como visto.
+update public.pedidos set pagamentos_vistos = array[pagamento_id]
+ where pagamento_id is not null and pagamentos_vistos = '{}'
+   and (status in ('pago', 'enviado', 'entregue') or pagamento_status in ('approved', 'valor_divergente') or observacoes like '%ATENÇÃO: pag%');
 
 -- Equipe: só quem está nesta lista mexe no painel. Ter conta no Supabase não basta.
 -- Para incluir alguém: insert into public.equipe (user_id, email) select id, email from auth.users where email = 'pessoa@exemplo.com';
@@ -304,10 +309,11 @@ end;
 $$;
 
 -- Pagamento aprovado (aviso do Mercado Pago, volta da cliente ou conferência diária; sempre com a chave de serviço).
--- Devolve 'ok', 'ja_pago', 'ja_registrado' (este mesmo pagamento já foi anotado num conflito) ou 'conflito' (conferir:
+-- Devolve 'ok', 'ja_pago' (pedido já pago, ou este mesmo pagamento já tratado: nada a avisar) ou 'conflito' (conferir:
 -- par já foi para outra cliente, pedido cancelado pela equipe ou valor pago menor que o total). Em 'conflito' o pedido
--- NÃO vira pago e ganha uma observação para a equipe. Em 'ok' e 'conflito' marca aviso_pendente ('pago' ou
--- 'conferir'): o site tira a marca quando o e-mail para a equipe sai, e a conferência diária reenvia o que ficou.
+-- NÃO vira pago e ganha uma observação para a equipe. Todo pagamento tratado entra em pagamentos_vistos, então o
+-- aviso repetido (mesmo depois de outro caminho trocar pagamento_status) não anota nem avisa de novo.
+-- Em 'ok' e 'conflito' marca aviso_pendente ('pago' ou 'conferir'): o site tira a marca quando o e-mail sai.
 drop function if exists public.confirmar_pagamento(bigint, text);
 drop function if exists public.confirmar_pagamento(bigint, text, numeric);
 create or replace function public.confirmar_pagamento(pedido bigint, id_pagamento text, valor numeric)
@@ -324,20 +330,22 @@ begin
   if ped.id is null then raise exception 'Pedido % não encontrado.', pedido; end if;
   if ped.status in ('pago', 'enviado', 'entregue') then return 'ja_pago'; end if;
   -- o mesmo pagamento de novo (o Mercado Pago repete o aviso; a volta da cliente e a conferência também consultam):
-  -- o conflito já foi anotado e avisado uma vez
-  if ped.pagamento_id = id_pagamento and ped.pagamento_status in ('approved', 'valor_divergente') then
-    return 'ja_registrado';
-  end if;
+  -- já foi tratado e avisado. 'ja_pago' é o valor que o código novo e o antigo entendem como "não avisar".
+  if id_pagamento = any(ped.pagamentos_vistos) then return 'ja_pago'; end if;
 
   if valor is null or valor + 0.01 < ped.total then
-    update pedidos set pagamento_id = id_pagamento, pagamento_status = 'valor_divergente', aviso_pendente = 'conferir', atualizado_em = now(),
+    update pedidos set pagamento_id = id_pagamento, pagamento_status = 'valor_divergente', aviso_pendente = 'conferir',
+           pagamentos_vistos = array_append(pagamentos_vistos, id_pagamento), atualizado_em = now(),
            observacoes = trim(both ' ' from coalesce(observacoes, '') || format(' ATENÇÃO: pagamento de R$ %s menor que o total R$ %s. Não enviar.', valor, ped.total))
      where id = pedido;
     return 'conflito';
   end if;
 
-  if ped.status = 'cancelado' and coalesce(ped.pagamento_status, '') not in ('expirado', 'rejected', 'cancelled', 'erro_checkout') then
-    update pedidos set pagamento_id = id_pagamento, pagamento_status = 'approved', aviso_pendente = 'conferir', atualizado_em = now(),
+  -- cancelado pelo sistema (venceu, recusado, refeito pela cliente, par de outra cliente): os pares decidem abaixo;
+  -- cancelado pela equipe: conflito
+  if ped.status = 'cancelado' and coalesce(ped.pagamento_status, '') not in ('expirado', 'rejected', 'cancelled', 'erro_checkout', 'substituido', 'par_indisponivel') then
+    update pedidos set pagamento_id = id_pagamento, pagamento_status = 'approved', aviso_pendente = 'conferir',
+           pagamentos_vistos = array_append(pagamentos_vistos, id_pagamento), atualizado_em = now(),
            observacoes = trim(both ' ' from coalesce(observacoes, '') || ' ATENÇÃO: pagamento aprovado num pedido que a equipe cancelou. Conferir antes de enviar ou reembolsar.')
      where id = pedido;
     return 'conflito';
@@ -348,14 +356,15 @@ begin
   perform 1 from estoque where slug = any(slugs) for update;
   if exists (select 1 from estoque e where e.slug = any(slugs)
               and e.pedido_id is distinct from pedido and not par_livre(e)) then
-    update pedidos set pagamento_id = id_pagamento, pagamento_status = 'approved', aviso_pendente = 'conferir', atualizado_em = now(),
+    update pedidos set pagamento_id = id_pagamento, pagamento_status = 'approved', aviso_pendente = 'conferir',
+           pagamentos_vistos = array_append(pagamentos_vistos, id_pagamento), atualizado_em = now(),
            observacoes = trim(both ' ' from coalesce(observacoes, '') || ' ATENÇÃO: pago depois que a reserva venceu e algum par já foi para outra cliente. Reembolsar ou oferecer troca.')
      where id = pedido;
     return 'conflito';
   end if;
 
-  update pedidos set status = 'pago', pagamento_id = id_pagamento, pagamento_status = 'approved',
-         aviso_pendente = 'pago', expira_em = null, atualizado_em = now()
+  update pedidos set status = 'pago', pagamento_id = id_pagamento, pagamento_status = 'approved', aviso_pendente = 'pago',
+         pagamentos_vistos = array_append(pagamentos_vistos, id_pagamento), expira_em = null, atualizado_em = now()
    where id = pedido;
   update estoque set status = 'vendido', pedido_id = pedido, reservado_ate = null, atualizado_em = now()
    where slug = any(slugs);
@@ -380,32 +389,54 @@ begin
 end;
 $$;
 
--- Estorno, devolução ou disputa no Mercado Pago depois do pedido pago: marca 'NÃO ENVIAR' e aviso_pendente = 'estorno'.
--- Devolve a situação do pedido antes (para o aviso), ou null se ele ainda não estava pago ou se este mesmo
--- estorno já tinha sido anotado (aviso repetido do Mercado Pago).
-create or replace function public.registrar_estorno(pedido bigint, situacao text)
+-- Estorno, devolução ou disputa de um pagamento no Mercado Pago. Vale só para o pagamento que o pedido registrou
+-- (pagamento_id). Devolve:
+--   a situação do pedido antes (pago/enviado/entregue): marcou 'NÃO ENVIAR' e aviso_pendente = 'estorno';
+--   'outro_pagamento': é de outro pagamento do mesmo pedido (cliente que pagou duas vezes); pedido pago só ganha a nota;
+--   null: pedido não pago (conflito ou cancelado: só anota a situação, para o painel não deixar marcar como pago um
+--         pagamento devolvido) ou o mesmo estorno avisado de novo.
+-- Sem id_pagamento (código antigo) vale para o pedido, como antes.
+drop function if exists public.registrar_estorno(bigint, text);
+create or replace function public.registrar_estorno(pedido bigint, situacao text, id_pagamento text default null)
 returns text
 language plpgsql
 security invoker
 set search_path = public
 as $$
 declare
-  antes text;
-  situacao_antes text;
+  ped  pedidos;
+  nota text;
 begin
-  select status, pagamento_status into antes, situacao_antes
-    from pedidos where id = pedido and status in ('pago', 'enviado', 'entregue') for update;
-  if antes is null or situacao_antes is not distinct from situacao then return null; end if;
+  select * into ped from pedidos where id = pedido for update;
+  if ped.id is null then return null; end if;
+
+  if id_pagamento is not null and ped.pagamento_id is distinct from id_pagamento then
+    nota := format('Pagamento extra %s ficou %s no Mercado Pago; o pedido continua valendo.', id_pagamento, situacao);
+    if ped.status in ('pago', 'enviado', 'entregue') and position(nota in coalesce(ped.observacoes, '')) = 0 then
+      update pedidos set observacoes = trim(both ' ' from coalesce(observacoes, '') || ' ' || nota), atualizado_em = now()
+       where id = pedido;
+    end if;
+    return 'outro_pagamento';
+  end if;
+
+  if ped.status not in ('pago', 'enviado', 'entregue') then
+    if id_pagamento is not null and ped.pagamento_status is distinct from situacao then
+      update pedidos set pagamento_status = situacao, atualizado_em = now() where id = pedido;
+    end if;
+    return null;
+  end if;
+
+  if ped.pagamento_status is not distinct from situacao then return null; end if; -- o mesmo estorno avisado de novo
   update pedidos set pagamento_status = situacao, aviso_pendente = 'estorno', atualizado_em = now(),
          observacoes = trim(both ' ' from coalesce(observacoes, '') || format(' NÃO ENVIAR: pagamento %s no Mercado Pago.', situacao))
    where id = pedido;
-  return antes;
+  return ped.status;
 end;
 $$;
 
 grant execute on function public.par_livre(public.estoque) to anon, authenticated;
-grant execute on function public.registrar_estorno(bigint, text) to service_role;
-revoke execute on function public.registrar_estorno(bigint, text) from public, anon, authenticated;
+grant execute on function public.registrar_estorno(bigint, text, text) to service_role;
+revoke execute on function public.registrar_estorno(bigint, text, text) from public, anon, authenticated;
 grant execute on function public.cancelar_expirados() to authenticated, service_role;
 grant execute on function public.criar_pedido(jsonb) to service_role;
 grant execute on function public.confirmar_pagamento(bigint, text, numeric) to service_role;

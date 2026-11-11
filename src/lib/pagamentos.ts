@@ -1,7 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { revalidatePath, revalidateTag } from "next/cache";
-import { avisarEquipe, escapar } from "@/lib/email";
+import { avisarEquipe, emailConfigurado, escapar } from "@/lib/email";
 import { TAG_ESTOQUE } from "@/lib/estoque";
 import { buscarPagamentosAlterados, cancelarPagamento, type Pagamento } from "@/lib/mercadopago";
 import { reais, type ItemPedido } from "@/lib/painel";
@@ -96,10 +96,17 @@ export async function processarPagamento(admin: SupabaseClient, pagamento: Pagam
     await rpc(admin, "cancelar_pedido_site", { pedido: idPedido, situacao: pagamento.status });
     resultado = "cancelado";
   } else if (ESTORNOS.includes(pagamento.status)) {
-    const antes = await rpc(admin, "registrar_estorno", { pedido: idPedido, situacao: pagamento.status });
-    if (antes) await enviarAviso(admin, idPedido, "estorno", pagamento.status);
-    else if (pagamento.status !== "in_mediation") await rpc(admin, "cancelar_pedido_site", { pedido: idPedido, situacao: pagamento.status });
-    resultado = antes ? "estorno_registrado" : "estorno_sem_pedido_pago";
+    const antes = await registrarEstorno(admin, idPedido, pagamento.status, idPagamento);
+    if (antes === "outro_pagamento") {
+      // estorno do pagamento extra de quem pagou duas vezes: o pedido continua valendo
+      resultado = "estorno_de_outro_pagamento";
+    } else if (antes) {
+      await enviarAviso(admin, idPedido, "estorno", pagamento.status);
+      resultado = "estorno_registrado";
+    } else {
+      if (pagamento.status !== "in_mediation") await rpc(admin, "cancelar_pedido_site", { pedido: idPedido, situacao: pagamento.status });
+      resultado = "estorno_sem_pedido_pago";
+    }
   } else {
     await anotarSituacao(admin, idPedido, pagamento);
     resultado = "anotado";
@@ -109,6 +116,18 @@ export async function processarPagamento(admin: SupabaseClient, pagamento: Pagam
   revalidatePath("/painel", "layout");
   registrar("info", "pagamento processado", { origem, pedido: idPedido, pagamento: idPagamento, situacao: pagamento.status, resultado });
   return resultado;
+}
+
+// O banco confere se o estorno é do pagamento que o pedido registrou. Banco ainda sem o schema.sql novo (função sem o
+// id do pagamento, erro PGRST202 do PostgREST): confere aqui e chama a função antiga.
+async function registrarEstorno(admin: SupabaseClient, idPedido: number, situacao: string, idPagamento: string) {
+  const { data, error } = await admin.rpc("registrar_estorno", { pedido: idPedido, situacao, id_pagamento: idPagamento });
+  if (!error) return data as string | null;
+  if (error.code !== "PGRST202") throw new ErroBanco("registrar_estorno", error);
+  const { data: p, error: erroLer } = await admin.from("pedidos").select("pagamento_id").eq("id", idPedido).maybeSingle();
+  if (erroLer) throw new ErroBanco("ler o pedido do estorno", erroLer);
+  if (p?.pagamento_id && p.pagamento_id !== idPagamento) return "outro_pagamento";
+  return rpc(admin, "registrar_estorno", { pedido: idPedido, situacao });
 }
 
 // Pedido ainda aguardando: guarda a situação do pagamento (Pix gerado, cartão em análise...).
@@ -128,6 +147,12 @@ async function enviarAviso(admin: SupabaseClient, idPedido: number, tipo: Aviso,
   try {
     const { data: p, error } = await admin.from("pedidos").select("*").eq("id", idPedido).single();
     if (error) throw new ErroBanco("ler o pedido para o aviso", error);
+    const temMarca = "aviso_pendente" in p; // banco com o schema.sql novo
+    if (!emailConfigurado()) {
+      // e-mail desligado (o passo 4 do ATIVAR-PAGAMENTO é opcional): o pedido fica só no painel, sem marca pendente
+      if (temMarca) await limparMarca(admin, idPedido, tipo);
+      return false;
+    }
     const estorno = situacao ?? p.pagamento_status;
     const e = p.endereco ?? {};
     const itens = (p.itens as ItemPedido[]).map((i) => `<li>${escapar(i.nome)} (${escapar(i.codigo)}) · ${reais(i.preco)}</li>`).join("");
@@ -159,16 +184,26 @@ async function enviarAviso(admin: SupabaseClient, idPedido: number, tipo: Aviso,
       registrar("erro", "aviso por e-mail não saiu", { pedido: idPedido, tipo });
       return false;
     }
-    if ("aviso_pendente" in p) {
-      // só limpa a marca deste aviso: se outro mais novo (ex.: estorno) chegou no meio, ele continua marcado
-      const { error: erroMarca } = await admin.from("pedidos").update({ aviso_pendente: null }).eq("id", idPedido).eq("aviso_pendente", tipo);
-      if (erroMarca) registrar("aviso", "e-mail saiu, mas a marca de aviso pendente ficou", { pedido: idPedido, tipo, erro: erroMarca.message });
-    }
+    if (temMarca) await limparMarca(admin, idPedido, tipo);
     return true;
   } catch (erro) {
     registrar("erro", "falha ao preparar o aviso por e-mail", { pedido: idPedido, tipo, erro: mensagemDe(erro) });
     return false;
   }
+}
+
+// Tira a marca deste aviso, e só dele: se outro mais novo (ex.: estorno) chegou no meio, ele continua marcado.
+async function limparMarca(admin: SupabaseClient, idPedido: number, tipo: string) {
+  const { error } = await admin.from("pedidos").update({ aviso_pendente: null }).eq("id", idPedido).eq("aviso_pendente", tipo);
+  if (error) registrar("aviso", "a marca de aviso pendente ficou", { pedido: idPedido, tipo, erro: error.message });
+}
+
+// O aviso marcado ainda faz sentido? A equipe pode ter enviado, cancelado ou reembolsado depois da marca.
+function avisoAindaVale(tipo: string, status: string, situacao: string | null) {
+  if (tipo === "pago") return status === "pago" && situacao === "approved";
+  if (tipo === "conferir") return !PAGOS.includes(status) && ["approved", "valor_divergente"].includes(situacao ?? "");
+  if (tipo === "estorno") return PAGOS.includes(status) && ESTORNOS.includes(situacao ?? "");
+  return false;
 }
 
 // Conferência diária: compara com o banco os pagamentos que mudaram nos últimos dias e aplica o que o aviso não
@@ -183,15 +218,10 @@ export async function conferirPagamentos(admin: SupabaseClient, agora: Date): Pr
     resumo.erros.push(`Conferência dos pagamentos: ${mensagemDe(erro)}`);
   }
   resumo.avisosReenviados = await reenviarAvisos(admin, agora, resumo.erros);
-  if (resumo.acertados.length || resumo.suspeitas.length || resumo.erros.length || resumo.incompleta) await avisarResumo(resumo);
-  registrar(resumo.erros.length ? "erro" : "info", "conferência diária", {
-    pagamentos: resumo.pagamentos,
-    acertados: resumo.acertados.length,
-    suspeitas: resumo.suspeitas.length,
-    avisosReenviados: resumo.avisosReenviados,
-    erros: resumo.erros,
-    incompleta: resumo.incompleta,
-  });
+  const temNovidade = resumo.acertados.length || resumo.suspeitas.length || resumo.erros.length || resumo.incompleta;
+  if (temNovidade && emailConfigurado()) await avisarResumo(resumo);
+  // o resumo inteiro também fica no log (só números de pedido e de pagamento): sem e-mail, é onde ele fica
+  registrar(resumo.erros.length ? "erro" : temNovidade ? "aviso" : "info", "conferência diária", { ...resumo });
   return resumo;
 }
 
@@ -233,7 +263,8 @@ async function acertarPagamentos(admin: SupabaseClient, agora: Date, resumo: Res
     if (!precisaAcertar(pedido, pagamento)) continue;
     try {
       const resultado = await processarPagamento(admin, pagamento, "conferencia");
-      resumo.acertados.push(`Pedido #${pedido.id}: pagamento ${idPagamento} ${pagamento.status} (resultado: ${resultado})`);
+      // 'ja_pago': o banco já tinha tratado este pagamento (pagamentos_vistos); não é acerto
+      if (resultado !== "ja_pago") resumo.acertados.push(`Pedido #${pedido.id}: pagamento ${idPagamento} ${pagamento.status} (resultado: ${resultado})`);
       const { data: atual } = await admin.from("pedidos").select("id,status,pagamento_id,pagamento_status").eq("id", pedido.id).maybeSingle();
       if (atual) pedidos.set(pedido.id, atual as PedidoResumo);
     } catch (erro) {
@@ -242,11 +273,12 @@ async function acertarPagamentos(admin: SupabaseClient, agora: Date, resumo: Res
   }
 }
 
-// O banco ainda não sabe desta situação do pagamento?
+// O banco talvez ainda não saiba desta situação do pagamento? Para aprovado, a palavra final é do banco: um pagamento
+// já tratado (pagamentos_vistos) volta como 'ja_pago', sem anotar nem avisar de novo.
 function precisaAcertar(pedido: PedidoResumo, pagamento: Pagamento) {
   const idPagamento = String(pagamento.id);
   if (pagamento.status === "approved") {
-    // aprovado que ficou aguardando, vencido ou cancelado porque o aviso não chegou; conflito já registrado não repete
+    // aprovado que ficou aguardando, vencido ou cancelado porque o aviso não chegou
     const registrado = pedido.pagamento_id === idPagamento && ["approved", "valor_divergente"].includes(pedido.pagamento_status ?? "");
     return !PAGOS.includes(pedido.status) && !registrado;
   }
@@ -257,11 +289,13 @@ function precisaAcertar(pedido: PedidoResumo, pagamento: Pagamento) {
   return false;
 }
 
-// Avisos por e-mail que não saíram (marcados pelo banco em aviso_pendente). Banco sem a coluna: nada a reenviar.
+// Avisos por e-mail que não saíram (marcados pelo banco em aviso_pendente). Banco sem a coluna ou e-mail desligado:
+// nada a reenviar. Aviso que perdeu o sentido (pedido já enviado, cancelado, reembolsado) só perde a marca.
 async function reenviarAvisos(admin: SupabaseClient, agora: Date, erros: string[]) {
+  if (!emailConfigurado()) return 0;
   const { data, error } = await admin
     .from("pedidos")
-    .select("id,aviso_pendente")
+    .select("id,status,pagamento_status,aviso_pendente")
     .not("aviso_pendente", "is", null)
     .lt("atualizado_em", new Date(agora.getTime() - AVISO_ESPERA_MIN * 60_000).toISOString())
     .gt("atualizado_em", new Date(agora.getTime() - AVISO_DIAS * 86_400_000).toISOString())
@@ -272,8 +306,9 @@ async function reenviarAvisos(admin: SupabaseClient, agora: Date, erros: string[
     return 0;
   }
   let enviados = 0;
-  for (const p of (data ?? []) as { id: number; aviso_pendente: string }[]) {
-    if (["pago", "conferir", "estorno"].includes(p.aviso_pendente) && (await enviarAviso(admin, p.id, p.aviso_pendente as Aviso))) enviados++;
+  for (const p of (data ?? []) as { id: number; status: string; pagamento_status: string | null; aviso_pendente: string }[]) {
+    if (!avisoAindaVale(p.aviso_pendente, p.status, p.pagamento_status)) await limparMarca(admin, p.id, p.aviso_pendente);
+    else if (await enviarAviso(admin, p.id, p.aviso_pendente as Aviso)) enviados++;
   }
   return enviados;
 }

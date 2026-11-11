@@ -17,7 +17,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ codi
 
   const idPagamento = url.searchParams.get("payment_id") ?? url.searchParams.get("collection_id") ?? "";
   const admin = supabaseAdmin();
-  if (admin && pagamentoOnlineAtivo() && /^[0-9a-f-]{36}$/i.test(codigo) && /^\d{1,20}$/.test(idPagamento)) {
+  const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(codigo);
+  if (admin && pagamentoOnlineAtivo() && uuid && /^\d{1,20}$/.test(idPagamento)) {
     try {
       const { data: pedido, error } = await admin
         .from("pedidos")
