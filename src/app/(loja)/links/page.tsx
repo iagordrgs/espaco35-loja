@@ -32,7 +32,7 @@ export default async function LinksPage() {
       </div>
 
       <div className="hero-actions">
-        <Link href="/produtos" className="button button-dark">Ver os {disponiveis.length} pares disponíveis <span aria-hidden="true">↗</span></Link>
+        <Link href="/produtos" className="button button-dark">{disponiveis.length > 0 ? `Ver a coleção (${disponiveis.length} disponíveis)` : "Ver a coleção"} <span aria-hidden="true">↗</span></Link>
         <a href={whatsapp} target="_blank" rel="noopener noreferrer" className="button button-outline">Falar no WhatsApp <span aria-hidden="true">↗</span></a>
       </div>
 

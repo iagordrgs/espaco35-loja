@@ -1,13 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { HORARIO, WHATSAPP_EXIBIDO, linkWhatsApp } from "@/lib/site";
+import { HORARIO, VENDEDOR, WHATSAPP_EXIBIDO, linkWhatsApp } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "Privacidade",
   description: "Quais dados a Espaço 35 pede para entregar o seu par, para que usa cada um e como você pode pedir para apagar.",
 };
 
-// Política curta, em linguagem simples (LGPD, Lei 13.709/2018). Sem CNPJ ainda: identifica a loja pelo nome e pelo WhatsApp.
+// Política curta, em linguagem simples (LGPD, Lei 13.709/2018). O responsável pelos dados vem de VENDEDOR (site.ts);
+// o endereço fica só no rodapé (decisão de 2026-11-10).
 export default function PrivacidadePage() {
   return (
     <main className="editorial-shell">
@@ -64,6 +65,9 @@ export default function PrivacidadePage() {
           <p>
             Você pode pedir para ver, corrigir ou apagar os seus dados, e saber com quem foram compartilhados. É só
             chamar no WhatsApp {WHATSAPP_EXIBIDO}. Respondemos em até 15 dias.
+          </p>
+          <p>
+            Responsável pelos dados: {VENDEDOR.marca} ({VENDEDOR.nomeEmpresarial}, {VENDEDOR.documento}).
           </p>
         </section>
       </div>
