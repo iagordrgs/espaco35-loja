@@ -6,7 +6,7 @@ import AvisoIndisponiveis from "@/components/AvisoIndisponiveis";
 import PagamentoOnline from "@/components/checkout/PagamentoOnline";
 import { useCart } from "@/context/CartContext";
 import { formatPrice, type Product } from "@/data/products";
-import { WHATSAPP_EXIBIDO, linkWhatsApp } from "@/lib/site";
+import { HORARIO_POR_EXTENSO, WHATSAPP_EXIBIDO, linkWhatsApp } from "@/lib/site";
 
 function buildMessage(products: Product[], total: number): string {
   const lines = products.map((product) => `• ${product.name} (cód. ${product.code}, tam. ${product.sizes[0]}) — ${formatPrice(product.price)}`);
@@ -25,7 +25,7 @@ export default function CheckoutCliente({ pagamentoOnline, freteFortaleza }: { p
       <main className="page-center">
         <span className="empty-mark" aria-hidden="true">✓</span>
         <h1>Pedido encaminhado.</h1>
-        <p>Obrigada por escolher a Espaço 35. A loja responde pelo WhatsApp {WHATSAPP_EXIBIDO}, de segunda a sábado, das 9h às 18h.</p>
+        <p>Obrigada por escolher a Espaço 35. A loja responde pelo WhatsApp {WHATSAPP_EXIBIDO}, {HORARIO_POR_EXTENSO}.</p>
         <Link href="/produtos" className="button button-dark">Voltar à loja <span>↗</span></Link>
       </main>
     );

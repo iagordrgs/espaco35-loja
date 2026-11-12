@@ -40,10 +40,8 @@ export default function Footer() {
           <Link href="/privacidade">Privacidade</Link>
           <span>© {new Date().getFullYear()} Espaço 35</span>
         </div>
-        {/* mostra o que estiver preenchido em VENDEDOR (site.ts); nome e CNPJ entram quando a MEI abrir */}
-        {[VENDEDOR.nomeEmpresarial, VENDEDOR.documento, VENDEDOR.endereco, VENDEDOR.email].some(Boolean) ? (
-          <p>{[VENDEDOR.nomeEmpresarial, VENDEDOR.documento, VENDEDOR.endereco, VENDEDOR.email].filter(Boolean).join(" · ")}</p>
-        ) : null}
+        {/* quem vende (Decreto 7.962/2013, art. 2º): o que estiver preenchido em VENDEDOR (site.ts) */}
+        <p>{[VENDEDOR.marca, VENDEDOR.nomeEmpresarial, VENDEDOR.documento, VENDEDOR.endereco, VENDEDOR.email, VENDEDOR.aviso].filter(Boolean).join(" · ")}</p>
         <span className="footer-note">Par único · tamanho 35 · sujeito à disponibilidade</span>
       </div>
     </footer>
