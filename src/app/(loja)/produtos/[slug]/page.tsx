@@ -8,6 +8,7 @@ import ShareProduct from "@/components/ShareProduct";
 import AtacadoChamada from "@/components/AtacadoChamada";
 import { formatPrice, getProduct, getProductsByCategory, isAvailable, products } from "@/data/products";
 import { getCatalogo } from "@/lib/estoque";
+import { FRETE_FORTALEZA } from "@/lib/frete";
 import { WHATSAPP_EXIBIDO, linkWhatsApp } from "@/lib/site";
 
 export function generateStaticParams() {
@@ -65,9 +66,9 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
             </a>
           )}
           <div className="detail-assurances">
-            <span><b>✓</b> Par único disponível no tamanho 35</span>
+            <span><b>✓</b> {isAvailable(product) ? "Par único disponível no tamanho 35" : "Par único no tamanho 35"}</span>
             <span><b>✓</b> Pague no site com Pix ou cartão em até 6x (com juros)</span>
-            <span><b>✓</b> Postamos em até 2 dias úteis; Fortaleza com entrega ou retirada grátis</span>
+            <span><b>✓</b> Postamos em até 2 dias úteis; em Fortaleza, entrega por {formatPrice(FRETE_FORTALEZA)} ou retirada grátis combinada com a equipe</span>
           </div>
           <AtacadoChamada variante="aviso" />
           <p className="detail-policy">

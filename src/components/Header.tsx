@@ -36,7 +36,7 @@ export default function Header() {
           </Link>
 
           <nav className="desktop-nav" aria-label="Navegação principal">
-            <Link href="/produtos">Novidades</Link>
+            <Link href="/produtos">Coleção</Link>
             {categories.map((category) => (
               <Link key={category.key} href={`/produtos?categoria=${category.key}`}>
                 {category.label}
@@ -71,7 +71,7 @@ export default function Header() {
           </div>
         </div>
         <nav id="mobile-navigation" className="mobile-nav" aria-label="Navegação móvel" hidden={!open}>
-            <Link href="/produtos" onClick={() => setOpen(false)}>Novidades e coleção <span>↗</span></Link>
+            <Link href="/produtos" onClick={() => setOpen(false)}>Toda a coleção <span>↗</span></Link>
             {categories.map((category) => (
               <Link key={category.key} href={`/produtos?categoria=${category.key}`} onClick={() => setOpen(false)}>
                 {category.label}<span>↗</span>

@@ -73,7 +73,7 @@ export default function HeroCampaign() {
           transition={{ duration: 0.7, delay: 1.1, ease }}
         >
           <Link href="/produtos" className="button button-dark">Ver a coleção <span aria-hidden="true">↗</span></Link>
-          <Link href="#vitrine" className="button button-outline">Destaques da semana</Link>
+          <Link href="#vitrine" className="button button-outline">Ver destaques</Link>
         </motion.div>
       </motion.div>
 
