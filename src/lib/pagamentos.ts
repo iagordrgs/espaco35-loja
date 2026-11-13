@@ -104,7 +104,9 @@ export async function processarPagamento(admin: SupabaseClient, pagamento: Pagam
     await rpc(admin, "cancelar_pedido_site", { pedido: idPedido, situacao: pagamento.status, id_pagamento: idPagamento });
     resultado = "cancelado";
   } else if (ESTORNOS.includes(situacao)) {
-    const antes = await registrarEstorno(admin, idPedido, situacao, idPagamento);
+    const resposta = await registrarEstorno(admin, idPedido, situacao, idPagamento);
+    const anotado = resposta === "anotado"; // pedido não pago: a situação foi anotada agora (primeira vez)
+    const antes = anotado ? null : resposta;
     if (antes === "outro_pagamento") {
       // estorno do pagamento extra de quem pagou duas vezes: o pedido continua valendo
       resultado = "estorno_de_outro_pagamento";
@@ -113,8 +115,8 @@ export async function processarPagamento(admin: SupabaseClient, pagamento: Pagam
       resultado = "estorno_registrado";
     } else if (situacao === "partially_refunded") {
       // devolução parcial de um pagamento que ainda não marcou o pedido como pago: tem dinheiro da cliente retido.
-      // Não cancela; a equipe confere
-      await enviarAviso(admin, idPedido, "estorno", { situacao });
+      // Não cancela; a equipe confere (o e-mail sai só na primeira vez, não a cada repetição do aviso)
+      if (anotado) await enviarAviso(admin, idPedido, "estorno", { situacao });
       resultado = "estorno_parcial_sem_pedido_pago";
     } else {
       if (situacao !== "in_mediation") await rpc(admin, "cancelar_pedido_site", { pedido: idPedido, situacao, id_pagamento: idPagamento });
@@ -291,8 +293,10 @@ async function acertarPagamentos(admin: SupabaseClient, agora: Date, resumo: Res
 
   // do mais antigo para o mais recente: se um pedido teve dois pagamentos, vale a ordem em que mudaram
   for (const recebido of [...pagamentos].reverse()) {
-    // estorno parcial chega como "approved" com esse detalhe: para a conferência, vale como estorno
-    const pagamento = recebido.status === "approved" && recebido.status_detail === "partially_refunded" ? { ...recebido, status: "partially_refunded" } : recebido;
+    // a situação vem da mesma regra do aviso (estorno parcial que ainda paga o total não é estorno); o pagamento
+    // original é o que vai para processarPagamento
+    const pedidoDele = pedidos.get(Number(recebido.external_reference));
+    const pagamento = pedidoDele ? { ...recebido, status: await situacaoDe(admin, pedidoDele.id, recebido) } : recebido;
     const pedido = pedidos.get(Number(pagamento.external_reference));
     if (!pedido) continue;
     const idPagamento = String(pagamento.id);
@@ -308,7 +312,7 @@ async function acertarPagamentos(admin: SupabaseClient, agora: Date, resumo: Res
     }
     if (!precisaAcertar(pedido, pagamento)) continue;
     try {
-      const resultado = await processarPagamento(admin, pagamento, "conferencia");
+      const resultado = await processarPagamento(admin, recebido, "conferencia");
       const { data: atual } = await admin.from("pedidos").select("id,status,pagamento_id,pagamento_status").eq("id", pedido.id).maybeSingle();
       if (atual) pedidos.set(pedido.id, atual as PedidoResumo);
       if (resultado !== "ja_pago") resumo.acertados.push(`Pedido #${pedido.id}: pagamento ${idPagamento} ${pagamento.status} (resultado: ${resultado})`);

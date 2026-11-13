@@ -175,3 +175,81 @@ describe("painel e banco: travas que não podem ser contornadas", () => {
     expect((await lerPedido(id)).aviso_pendente).toBe("pago");
   });
 });
+
+describe("segunda revisão: o que as correções não podiam quebrar", () => {
+  it("quando a conferência diária vê a devolução só do valor a mais, então o pedido continua liberado para envio", async () => {
+    const { id } = await pedidoDoSite([A.slug]);
+    const total = Number((await lerPedido(id)).total);
+    const { idPagamento } = await pagar(id, { status: "approved", transaction_amount: total + 20 });
+    Object.assign(mp.pagamentos.get(idPagamento)!, { status_detail: "partially_refunded", transaction_amount_refunded: 20 });
+    await aviso(idPagamento);
+    await conferencia();
+    const pedido = await lerPedido(id);
+    expect(pedido).toMatchObject({ status: "pago", pagamento_status: "approved" });
+    expect(pedido.observacoes ?? "").not.toMatch(/NÃO ENVIAR/);
+  });
+
+  it("quando a cliente refaz o pedido e depois paga o Pix do pedido antigo, então o antigo vira pago e o novo é cancelado", async () => {
+    const antigo = await pedidoDoSite([A.slug]);
+    const pix = novoPagamento({ status: "pending", external_reference: String(antigo.id), transaction_amount: Number((await lerPedido(antigo.id)).total) });
+    await aviso(pix);
+    const r = await checkout(dadosCheckout([A.slug], { substituir: antigo.codigo }));
+    const [{ id: novoId }] = await sql("select id from public.pedidos where codigo_publico = $1", [r.corpo.codigo]);
+    mp.pagamentos.get(pix)!.status = "approved";
+    await aviso(pix);
+    expect((await lerPedido(antigo.id)).status).toBe("pago");
+    expect((await lerPedido(Number(novoId))).status).toBe("cancelado");
+    expect(await situacaoPar(A.slug)).toMatchObject({ status: "vendido", pedido_id: antigo.id });
+    expect(emailsDoPedido(email.enviados, antigo.id).map((e) => e.assunto)).toEqual([expect.stringMatching(/Novo pedido pago/)]);
+  });
+
+  it("quando a cliente troca de pedido várias vezes, então a reserva do par não passa do prazo do Pix que ela gerou", async () => {
+    const primeiro = await pedidoDoSite([A.slug]);
+    await pagar(primeiro.id, { status: "pending" });
+    const prazo = new Date((await situacaoPar(A.slug))!.reservado_ate!).getTime();
+    let codigo = primeiro.codigo;
+    for (let i = 0; i < 3; i++) {
+      await sql("update public.pedidos set criado_em = criado_em - interval '20 minutes', expira_em = expira_em + interval '20 minutes' where status = 'novo'");
+      const r = await checkout(dadosCheckout([A.slug], { substituir: codigo }));
+      codigo = r.corpo.codigo!;
+    }
+    expect(new Date((await situacaoPar(A.slug))!.reservado_ate!).getTime()).toBeLessThanOrEqual(prazo);
+  });
+
+  it("quando o aviso de devolução parcial de um pedido não pago se repete, então a equipe recebe 1 e-mail só", async () => {
+    const { id } = await pedidoDoSite([A.slug]);
+    novoPagamento({ id: 990002, status: "approved", status_detail: "partially_refunded", external_reference: String(id), transaction_amount: 50 });
+    await aviso("990002");
+    await aviso("990002");
+    await aviso("990002");
+    expect(emailsDoPedido(email.enviados, id)).toHaveLength(1);
+  });
+
+  it("quando o dono apaga um pedido pela chave de serviço (ex.: pedido de teste ou pedido de exclusão de dados), então o pedido é apagado", async () => {
+    const { id } = await pedidoDoPainel([A]);
+    const { admin } = await import("./apoio/loja");
+    await admin().from("pedidos").delete().eq("id", id);
+    expect(await sql("select id from public.pedidos where id = $1", [id])).toHaveLength(0);
+  });
+
+  it("quando a equipe reabre um pedido que o sistema cancelou e ele vence, então a limpeza dos vencidos funciona com a sessão da equipe", async () => {
+    const { id } = await pedidoDoSite([A.slug]);
+    await sql("select public.cancelar_pedido_site($1, 'erro_checkout')", [id]);
+    const c = await clienteLogado(EQUIPE);
+    expect((await c.rpc("atualizar_pedido", { pedido: id, novo_status: "novo" })).error).toBeNull();
+    await sql("update public.pedidos set expira_em = now() - interval '1 minute' where id = $1", [id]);
+    const { error } = await c.rpc("cancelar_expirados");
+    expect(error).toBeNull();
+    expect((await lerPedido(id)).status).toBe("cancelado");
+  });
+
+  it("quando o pagamento em dobro entra em disputa (não foi devolvido), então a marca de 'reembolsar' continua", async () => {
+    const { id } = await pedidoDoSite([A.slug]);
+    await pagar(id, { status: "approved" });
+    email.falhar = true;
+    const segundo = await pagar(id, { status: "approved" });
+    mp.pagamentos.get(segundo.idPagamento)!.status = "in_mediation";
+    await aviso(segundo.idPagamento);
+    expect((await lerPedido(id)).aviso_pendente).toBe("dobro");
+  });
+});

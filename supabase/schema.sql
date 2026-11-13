@@ -206,7 +206,8 @@ begin
   if ped.id is null or ped.origem <> 'site' or ped.status <> 'novo' then return 0; end if;
   foreach alvo in array pedidos_substituiveis(ped.cliente_email, ped.cliente_telefone, codigo, novo) loop
     -- os pares que continuam na sacola não voltam à venda no meio da troca: a reserva passa para o pedido novo
-    update estoque set pedido_id = novo, reservado_ate = ped.expira_em, atualizado_em = now()
+    -- o prazo continua o do Pix gerado (não renova): trocar de pedido não estende a reserva sem um Pix novo
+    update estoque set pedido_id = novo, reservado_ate = least(reservado_ate, ped.expira_em), atualizado_em = now()
      where pedido_id = alvo and status = 'reservado'
        and slug in (select item->>'slug' from jsonb_array_elements(ped.itens) item);
     perform cancelar_pedido_site(alvo, 'substituido');
@@ -485,6 +486,16 @@ begin
   select array_agg(item->>'slug') into slugs from jsonb_array_elements(ped.itens) item;
   insert into estoque (slug) select unnest(slugs) on conflict (slug) do nothing;
   perform 1 from estoque where slug = any(slugs) for update;
+  -- a cliente refez o pedido (o novo ficou com a reserva) e pagou o Pix do antigo: vale o que ela pagou. O pedido novo,
+  -- ainda sem Pix e da mesma cliente, é cancelado e os pares voltam para este
+  if ped.status = 'cancelado' and ped.pagamento_status = 'substituido' then
+    perform cancelar_pedido_site(n.id, 'substituido')
+       from pedidos n
+      where n.origem = 'site' and n.status = 'novo' and n.id > ped.id and n.pagamento_status is null
+        and (lower(n.cliente_email) = lower(ped.cliente_email)
+             or regexp_replace(coalesce(n.cliente_telefone, ''), '\D', '', 'g') = regexp_replace(coalesce(ped.cliente_telefone, ''), '\D', '', 'g'))
+        and exists (select 1 from estoque e where e.slug = any(slugs) and e.pedido_id = n.id);
+  end if;
   if exists (select 1 from estoque e where e.slug = any(slugs)
               and e.pedido_id is distinct from pedido and not par_livre(e)) then
     update pedidos set pagamento_id = id_pagamento, pagamento_status = 'approved', aviso_pendente = 'conferir',
@@ -560,7 +571,7 @@ begin
     if ped.status in ('pago', 'enviado', 'entregue') and position(nota in coalesce(ped.observacoes, '')) = 0 then
       -- o pagamento extra foi devolvido: o aviso de "reembolsar" não vale mais
       update pedidos set observacoes = trim(both ' ' from coalesce(observacoes, '') || ' ' || nota), atualizado_em = now(),
-             aviso_pendente = case when aviso_pendente = 'dobro' then null else aviso_pendente end
+             aviso_pendente = case when aviso_pendente = 'dobro' and situacao in ('refunded', 'charged_back') then null else aviso_pendente end
        where id = pedido;
     end if;
     return 'outro_pagamento';
@@ -569,6 +580,7 @@ begin
   if ped.status not in ('pago', 'enviado', 'entregue') then
     if id_pagamento is not null and ped.pagamento_status is distinct from situacao then
       update pedidos set pagamento_status = situacao, atualizado_em = now() where id = pedido;
+      return 'anotado'; -- pedido não pago: só anotou (primeira vez desta situação)
     end if;
     return null;
   end if;
@@ -591,7 +603,7 @@ security invoker
 set search_path = public
 as $$
 begin
-  if current_user not in ('authenticated', 'anon') then return new; end if;
+  if current_user not in ('authenticated', 'anon') then return coalesce(new, old); end if;
 
   if tg_op = 'DELETE' then
     if old.origem = 'site' or old.pagamento_id is not null then
@@ -616,7 +628,7 @@ begin
      or (new.pagamento_status is distinct from old.pagamento_status
          and not (old.status = 'novo' and new.status = 'cancelado' and new.pagamento_status = 'expirado'
                   and old.expira_em < now()
-                  and coalesce(old.pagamento_status, '') in ('', 'pending', 'in_process', 'authorized', 'rejected', 'cancelled'))) then
+                  and coalesce(old.pagamento_status, '') not in ('approved', 'valor_divergente', 'refunded', 'charged_back', 'in_mediation', 'partially_refunded'))) then
     raise exception 'Os dados do pagamento deste pedido só o sistema muda.';
   end if;
 
