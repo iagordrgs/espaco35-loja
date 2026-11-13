@@ -152,7 +152,7 @@ begin
     -- pagamento aprovado num pedido em conflito continua registrado (a equipe confere e reembolsa): sem isso,
     -- a volta da cliente e a conferência diária achariam que o pagamento é novo e avisariam o conflito de novo
     update pedidos set status = 'cancelado', atualizado_em = now(),
-           pagamento_status = case when pagamento_status in ('approved', 'valor_divergente') then pagamento_status else 'expirado' end
+           pagamento_status = case when pagamento_status in ('approved', 'valor_divergente', 'refunded', 'charged_back', 'in_mediation', 'partially_refunded') then pagamento_status else 'expirado' end
      where status = 'novo' and expira_em is not null and expira_em < now()
     returning id
   )
@@ -203,8 +203,12 @@ declare
   qtd integer := 0;
 begin
   select * into ped from pedidos where id = novo;
-  if ped.id is null or ped.origem <> 'site' then return 0; end if;
+  if ped.id is null or ped.origem <> 'site' or ped.status <> 'novo' then return 0; end if;
   foreach alvo in array pedidos_substituiveis(ped.cliente_email, ped.cliente_telefone, codigo, novo) loop
+    -- os pares que continuam na sacola não voltam à venda no meio da troca: a reserva passa para o pedido novo
+    update estoque set pedido_id = novo, reservado_ate = ped.expira_em, atualizado_em = now()
+     where pedido_id = alvo and status = 'reservado'
+       and slug in (select item->>'slug' from jsonb_array_elements(ped.itens) item);
     perform cancelar_pedido_site(alvo, 'substituido');
     qtd := qtd + 1;
   end loop;
@@ -239,15 +243,19 @@ begin
   if slugs is null or array_length(slugs, 1) = 0 then
     raise exception 'Pedido sem pares.';
   end if;
+  -- pedido do site: a trava vem antes de tudo (inclusive da limpeza dos vencidos), para duas criações não se travarem
+  if coalesce(dados->>'origem', 'painel') = 'site' then
+    perform pg_advisory_xact_lock(353500); -- um pedido do site por vez
+  end if;
   perform cancelar_expirados();
 
   if coalesce(dados->>'origem', 'painel') = 'site' then
-    perform pg_advisory_xact_lock(353500); -- um pedido do site por vez
     substitui := pedidos_substituiveis(dados->>'cliente_email', dados->>'cliente_telefone', dados->>'substituir', null);
+    -- todo pedido aberto desta conexão conta, inclusive os da mesma cliente com Pix gerado; só não contam os que este
+    -- pedido vai substituir
     if (select count(*) from pedidos p
          where p.origem = 'site' and p.status = 'novo' and p.expira_em > now()
            and p.cliente_ip_hash = dados->>'cliente_ip_hash'
-           and lower(coalesce(p.cliente_email, '')) <> lower(coalesce(dados->>'cliente_email', ''))
            and not (p.id = any(substitui))) >= coalesce((dados->>'max_por_conexao')::int, 2) then
       raise exception 'Limite de pedidos abertos por conexão.';
     end if;
@@ -261,6 +269,18 @@ begin
     from estoque e where e.slug = any(slugs) and not par_livre(e)
      and not (e.pedido_id is not null and e.pedido_id = any(substitui));
   if ocupados is not null then
+    -- o par está preso num pedido aberto da própria cliente (Pix gerado em outro aparelho, sem o código): avisa isso,
+    -- e não "outra cliente reservou"
+    if coalesce(dados->>'origem', 'painel') = 'site' and not exists (
+         select 1 from estoque e
+          where e.slug = any(ocupados)
+            and not exists (select 1 from pedidos p
+                             where p.id = e.pedido_id and p.origem = 'site' and p.status = 'novo'
+                               and (lower(p.cliente_email) = lower(dados->>'cliente_email')
+                                    or regexp_replace(coalesce(p.cliente_telefone, ''), '\D', '', 'g')
+                                       = regexp_replace(coalesce(dados->>'cliente_telefone', ''), '\D', '', 'g')))) then
+      raise exception 'Par no seu pedido: %', array_to_string(ocupados, ', ');
+    end if;
     raise exception 'Par indisponível: %', array_to_string(ocupados, ', ');
   end if;
 
@@ -423,11 +443,13 @@ begin
   if ped.id is null then raise exception 'Pedido % não encontrado.', pedido; end if;
   -- o mesmo pagamento de novo (o Mercado Pago repete o aviso; a volta da cliente e a conferência também consultam):
   -- já foi tratado e avisado. 'ja_pago' é o valor que o código novo e o antigo entendem como "não avisar".
-  if id_pagamento = any(ped.pagamentos_vistos) or id_pagamento = ped.pagamento_id then return 'ja_pago'; end if;
+  -- (o Pix e o cartão em análise mantêm o mesmo id de pendente para aprovado: o id registrado no pedido NÃO quer dizer
+  -- que já foi tratado; só pagamentos_vistos diz isso)
+  if id_pagamento = any(ped.pagamentos_vistos) then return 'ja_pago'; end if;
   if ped.status in ('pago', 'enviado', 'entregue') and ped.pagamento_id is null then
     -- marcado como pago à mão no painel (ex.: a equipe viu o pagamento antes do aviso): liga este pagamento ao pedido
     -- e pede para a equipe conferir se é o mesmo dinheiro ou se a cliente pagou duas vezes
-    update pedidos set pagamento_id = id_pagamento, pagamento_status = 'approved', aviso_pendente = 'conferir',
+    update pedidos set pagamento_id = id_pagamento, pagamento_status = 'approved', aviso_pendente = 'pago_no_painel',
            pagamentos_vistos = array_append(pagamentos_vistos, id_pagamento), atualizado_em = now(),
            observacoes = trim(both ' ' from coalesce(observacoes, '') || format(' ATENÇÃO: pagamento %s aprovado no Mercado Pago num pedido já marcado como pago no painel. Conferir se a cliente pagou duas vezes.', id_pagamento))
      where id = pedido;
@@ -536,7 +558,9 @@ begin
           or ped.pagamento_status in ('approved', 'valor_divergente', 'refunded', 'charged_back', 'in_mediation', 'partially_refunded')) then
     nota := format('Pagamento extra %s ficou %s no Mercado Pago; o pedido continua valendo.', id_pagamento, situacao);
     if ped.status in ('pago', 'enviado', 'entregue') and position(nota in coalesce(ped.observacoes, '')) = 0 then
-      update pedidos set observacoes = trim(both ' ' from coalesce(observacoes, '') || ' ' || nota), atualizado_em = now()
+      -- o pagamento extra foi devolvido: o aviso de "reembolsar" não vale mais
+      update pedidos set observacoes = trim(both ' ' from coalesce(observacoes, '') || ' ' || nota), atualizado_em = now(),
+             aviso_pendente = case when aviso_pendente = 'dobro' then null else aviso_pendente end
        where id = pedido;
     end if;
     return 'outro_pagamento';
@@ -569,6 +593,13 @@ as $$
 begin
   if current_user not in ('authenticated', 'anon') then return new; end if;
 
+  if tg_op = 'DELETE' then
+    if old.origem = 'site' or old.pagamento_id is not null then
+      raise exception 'Pedido do site ou com pagamento não pode ser apagado: cancele pelo painel.';
+    end if;
+    return old;
+  end if;
+
   if tg_op = 'INSERT' then
     if new.origem = 'site' or new.pagamento_id is not null or new.pagamento_status is not null
        or coalesce(array_length(new.pagamentos_vistos, 1), 0) > 0 then
@@ -581,8 +612,11 @@ begin
   if new.origem is distinct from old.origem or new.codigo_publico is distinct from old.codigo_publico
      or new.pagamento_id is distinct from old.pagamento_id
      or new.pagamentos_vistos is distinct from old.pagamentos_vistos
+     or new.aviso_pendente is distinct from old.aviso_pendente
      or (new.pagamento_status is distinct from old.pagamento_status
-         and not (old.status = 'novo' and new.status = 'cancelado' and new.pagamento_status = 'expirado')) then
+         and not (old.status = 'novo' and new.status = 'cancelado' and new.pagamento_status = 'expirado'
+                  and old.expira_em < now()
+                  and coalesce(old.pagamento_status, '') in ('', 'pending', 'in_process', 'authorized', 'rejected', 'cancelled'))) then
     raise exception 'Os dados do pagamento deste pedido só o sistema muda.';
   end if;
 
@@ -599,7 +633,7 @@ end;
 $$;
 
 drop trigger if exists proteger_pagamento on public.pedidos;
-create trigger proteger_pagamento before insert or update on public.pedidos
+create trigger proteger_pagamento before insert or update or delete on public.pedidos
   for each row execute function public.proteger_pagamento();
 
 grant execute on function public.par_livre(public.estoque) to anon, authenticated;

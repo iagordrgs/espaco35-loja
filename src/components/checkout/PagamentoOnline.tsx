@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useCart } from "@/context/CartContext";
 import { formatPrice, type Product } from "@/data/products";
 
@@ -18,6 +18,7 @@ export default function PagamentoOnline({ products, freteFortaleza }: { products
   const [avisoCep, setAvisoCep] = useState("");
   const [calculando, setCalculando] = useState(false);
   const [enviando, setEnviando] = useState(false);
+  const enviandoAgora = useRef(false); // trava na hora: o botão só fica desabilitado depois do próximo desenho da tela
   const [erro, setErro] = useState("");
   const { reserva, guardarReserva } = useCart();
 
@@ -54,6 +55,8 @@ export default function PagamentoOnline({ products, freteFortaleza }: { products
     e.preventDefault();
     setErro("");
     const f = new FormData(e.currentTarget);
+    if (enviandoAgora.current) return;
+    enviandoAgora.current = true;
     setEnviando(true);
     try {
       const resposta = await fetch("/api/checkout", {
@@ -74,6 +77,7 @@ export default function PagamentoOnline({ products, freteFortaleza }: { products
     } catch (falha) {
       setErro(falha instanceof Error ? falha.message : "Não foi possível abrir o pagamento.");
       setEnviando(false);
+      enviandoAgora.current = false;
     }
   }
 

@@ -93,6 +93,8 @@ export async function POST(request: Request) {
     },
   });
   if (error) {
+    if (error.message.startsWith("Par no seu pedido"))
+      return erro("Você já tem um pedido com o Pix gerado para este par. Pague esse Pix ou espere 30 minutos para fazer outro pedido.", 409);
     if (error.message.startsWith("Limite de pedidos abertos"))
       return erro("Já existem pedidos aguardando pagamento a partir desta conexão. Conclua um deles ou fale com a equipe pelo WhatsApp.", 429);
     return erro(error.message.startsWith("Par indisponível") ? "Um dos pares acabou de ser reservado por outra cliente. Volte à sacola e confira." : "Não foi possível criar o pedido agora. Tente de novo ou finalize pelo WhatsApp.", 409);
@@ -126,6 +128,9 @@ export async function POST(request: Request) {
     // o link saiu: agora sim os pedidos anteriores que este substitui são cancelados (e os pares deles voltam)
     const { error: erroSubstituir } = await admin.rpc("substituir_pedidos_site", { novo: idPedido, codigo: substituir });
     if (erroSubstituir) console.error(`[checkout] pedidos anteriores não substituídos ${JSON.stringify({ pedido: idPedido, erro: erroSubstituir.message })}`);
+    // dois cliques juntos: o pedido mais novo substitui este; o link deste não vale mais
+    const { data: agora } = await admin.from("pedidos").select("status").eq("id", idPedido).single();
+    if (agora?.status !== "novo") return erro("Este pedido foi refeito em outra tentativa. Use o link mais recente.", 409);
     revalidateTag(TAG_ESTOQUE, { expire: 0 }); // um pedido anterior desta cliente pode ter liberado pares
     const usarSandbox = process.env.MERCADOPAGO_SANDBOX === "1" && preferencia.sandbox_init_point;
     return Response.json({ url: usarSandbox ? preferencia.sandbox_init_point : preferencia.init_point, codigo: pedido?.codigo_publico });

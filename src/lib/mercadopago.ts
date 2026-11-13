@@ -59,7 +59,15 @@ export function criarPreferencia(corpo: {
   });
 }
 
-export type Pagamento = { id: number; status: string; status_detail?: string; external_reference?: string; transaction_amount?: number; currency_id?: string };
+export type Pagamento = {
+  id: number;
+  status: string;
+  status_detail?: string;
+  external_reference?: string;
+  transaction_amount?: number;
+  transaction_amount_refunded?: number;
+  currency_id?: string;
+};
 
 export function buscarPagamento(id: string) {
   return chamar<Pagamento>(`/v1/payments/${encodeURIComponent(id)}`);

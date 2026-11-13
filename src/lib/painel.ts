@@ -47,7 +47,7 @@ export type Pedido = {
   rastreio?: string | null;
   codigo_publico?: string;
   link_pagamento?: string | null;
-  aviso_pendente?: "pago" | "conferir" | "estorno" | "dobro" | null; // e-mail para a equipe que ainda não saiu
+  aviso_pendente?: "pago" | "conferir" | "estorno" | "dobro" | "pago_no_painel" | null; // e-mail para a equipe que ainda não saiu
 };
 
 export type LinhaEstoque = { slug: string; status: "disponivel" | "reservado" | "vendido"; reservado_ate: string | null; pedido_id: number | null };

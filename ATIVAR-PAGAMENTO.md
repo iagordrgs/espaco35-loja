@@ -65,7 +65,13 @@ Para ligar: cadastre na Vercel `CRON_SECRET` com um texto aleatório de pelo men
 e faça **Redeploy**. Sem essa variável, a conferência diária fica desligada; a conferência na volta da cliente funciona sem ela.
 O resumo e o reenvio de e-mails dependem do passo 4. Sem ele, o resumo fica só nos logs da Vercel.
 
-Ordem ao publicar esta versão:
+Ordem ao publicar a versão das correções dos testes (branch `ia/corrigir-bugs-testes`): **primeiro o banco, depois o site**.
+1. Rode o `supabase/schema.sql` de novo no SQL Editor. O site antigo continua funcionando com o banco novo.
+2. Logo em seguida publique o site e espere ficar **Ready**. Entre os dois passos, o site antigo não manda os e-mails novos
+   (pagamento em dobro, pago no painel); não deixe esse intervalo passar das 10h, quando roda a conferência diária.
+3. Depois disso, não volte para um deploy anterior (Instant Rollback): o site antigo não conhece as funções novas.
+
+Ordem usada na versão anterior (plano B, já publicada):
 1. Espere o deploy dela ficar **Ready** em Deployments.
 2. Logo depois, rode o `supabase/schema.sql` de novo. Ele guarda os pagamentos já tratados de cada pedido (aviso repetido
    não anota nem avisa de novo), marca o e-mail que não saiu (o painel mostra) e só deixa um estorno valer para o
