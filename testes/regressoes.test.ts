@@ -253,3 +253,15 @@ describe("segunda revisão: o que as correções não podiam quebrar", () => {
     expect((await lerPedido(id)).aviso_pendente).toBe("dobro");
   });
 });
+
+describe("pedidos antigos (de antes do registro de pagamentos tratados)", () => {
+  it("quando chega de novo o aviso do pagamento de um pedido pago antes desse registro existir, então não vira 'pagamento em dobro'", async () => {
+    const { id } = await pedidoDoSite([A.slug]);
+    const { idPagamento } = await pagar(id, { status: "approved" });
+    await sql("update public.pedidos set pagamentos_vistos = '{}' where id = $1", [id]); // como um pedido pago antes do registro
+    email.enviados.length = 0;
+    await aviso(idPagamento);
+    expect(email.enviados).toHaveLength(0);
+    expect((await lerPedido(id)).aviso_pendente).toBeNull();
+  });
+});

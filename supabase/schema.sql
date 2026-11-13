@@ -447,6 +447,8 @@ begin
   -- (o Pix e o cartão em análise mantêm o mesmo id de pendente para aprovado: o id registrado no pedido NÃO quer dizer
   -- que já foi tratado; só pagamentos_vistos diz isso)
   if id_pagamento = any(ped.pagamentos_vistos) then return 'ja_pago'; end if;
+  -- pedido já pago por este mesmo pagamento (inclusive os pagos antes de existir pagamentos_vistos): nada a fazer
+  if ped.status in ('pago', 'enviado', 'entregue') and id_pagamento = ped.pagamento_id then return 'ja_pago'; end if;
   if ped.status in ('pago', 'enviado', 'entregue') and ped.pagamento_id is null then
     -- marcado como pago à mão no painel (ex.: a equipe viu o pagamento antes do aviso): liga este pagamento ao pedido
     -- e pede para a equipe conferir se é o mesmo dinheiro ou se a cliente pagou duas vezes
