@@ -164,10 +164,61 @@ begin
 end;
 $$;
 
+-- Pedidos abertos do site que um pedido novo da mesma cliente substitui:
+--   * o pedido cujo código público o navegador mandou em 'substituir' (quem tem o código abriu o pedido), ou
+--   * pedido da mesma cliente (mesmo e-mail ou WhatsApp) que ainda NÃO gerou Pix nem mandou cartão.
+-- Pedido com Pix gerado só é substituído pelo código: quem só sabe o e-mail ou o WhatsApp de outra cliente
+-- não derruba o pedido dela. Com 'antes_de', só pedidos mais antigos que ele (dois cliques juntos: o mais novo vale).
+create or replace function public.pedidos_substituiveis(email text, telefone text, codigo text, antes_de bigint)
+returns bigint[]
+language sql
+stable
+security invoker
+set search_path = public
+as $$
+  select coalesce(array_agg(p.id), '{}')
+    from pedidos p
+   where p.origem = 'site' and p.status = 'novo'
+     and (antes_de is null or p.id < antes_de)
+     and (
+       (codigo is not null and p.codigo_publico::text = lower(codigo))
+       or (p.pagamento_status is null and (
+             (email is not null and lower(p.cliente_email) = lower(email))
+             or (length(regexp_replace(coalesce(telefone, ''), '\D', '', 'g')) >= 10
+                 and regexp_replace(coalesce(p.cliente_telefone, ''), '\D', '', 'g') = regexp_replace(telefone, '\D', '', 'g'))))
+     );
+$$;
+
+-- Depois que o link do Mercado Pago do pedido novo saiu: cancela os pedidos que ele substitui ('substituido').
+-- Se o pedido novo falhar antes disso (CEP, frete, par esgotado, Mercado Pago fora), os anteriores ficam como estavam.
+create or replace function public.substituir_pedidos_site(novo bigint, codigo text default null)
+returns integer
+language plpgsql
+security invoker
+set search_path = public
+as $$
+declare
+  ped pedidos;
+  alvo bigint;
+  qtd integer := 0;
+begin
+  select * into ped from pedidos where id = novo;
+  if ped.id is null or ped.origem <> 'site' then return 0; end if;
+  foreach alvo in array pedidos_substituiveis(ped.cliente_email, ped.cliente_telefone, codigo, novo) loop
+    perform cancelar_pedido_site(alvo, 'substituido');
+    qtd := qtd + 1;
+  end loop;
+  return qtd;
+end;
+$$;
+
 -- Cria o pedido e segura os pares. Status 'novo' reserva; 'pago'/'enviado'/'entregue' já vende.
 -- Falha (e não grava nada) se algum par já estiver reservado ou vendido.
 -- Com sem_reserva = true (pedido do site) só confere se os pares estão livres e NÃO reserva: a reserva
 -- acontece em reservar_pedido, quando o Mercado Pago avisa que o Pix foi gerado ou o cartão enviado.
+-- Pedido do site (origem 'site'): uma criação por vez (trava), para dois cliques juntos não passarem pelas regras.
+-- Os pedidos que o novo vai substituir (pedidos_substituiveis) não contam no limite por conexão e os pares deles
+-- contam como livres; quem os cancela é substituir_pedidos_site, só depois que o link do Mercado Pago saiu.
 create or replace function public.criar_pedido(dados jsonb)
 returns bigint
 language plpgsql
@@ -182,6 +233,7 @@ declare
                                  then now() + make_interval(mins => (dados->>'reservar_minutos')::int) end;
   slugs      text[];
   ocupados   text[];
+  substitui  bigint[] := '{}';
 begin
   select array_agg(item->>'slug') into slugs from jsonb_array_elements(dados->'itens') item;
   if slugs is null or array_length(slugs, 1) = 0 then
@@ -189,12 +241,25 @@ begin
   end if;
   perform cancelar_expirados();
 
+  if coalesce(dados->>'origem', 'painel') = 'site' then
+    perform pg_advisory_xact_lock(353500); -- um pedido do site por vez
+    substitui := pedidos_substituiveis(dados->>'cliente_email', dados->>'cliente_telefone', dados->>'substituir', null);
+    if (select count(*) from pedidos p
+         where p.origem = 'site' and p.status = 'novo' and p.expira_em > now()
+           and p.cliente_ip_hash = dados->>'cliente_ip_hash'
+           and lower(coalesce(p.cliente_email, '')) <> lower(coalesce(dados->>'cliente_email', ''))
+           and not (p.id = any(substitui))) >= coalesce((dados->>'max_por_conexao')::int, 2) then
+      raise exception 'Limite de pedidos abertos por conexão.';
+    end if;
+  end if;
+
   -- garante uma linha por par e trava todas antes de conferir
   insert into estoque (slug) select unnest(slugs) on conflict (slug) do nothing;
   perform 1 from estoque where slug = any(slugs) for update;
 
   select array_agg(e.slug) into ocupados
-    from estoque e where e.slug = any(slugs) and not par_livre(e);
+    from estoque e where e.slug = any(slugs) and not par_livre(e)
+     and not (e.pedido_id is not null and e.pedido_id = any(substitui));
   if ocupados is not null then
     raise exception 'Par indisponível: %', array_to_string(ocupados, ', ');
   end if;
@@ -275,8 +340,17 @@ begin
        select 1 from pedidos where id = pedido and origem = 'site' and coalesce(pagamento_status, '') <> 'approved') then
     raise exception 'Pedido do site sem pagamento aprovado no Mercado Pago. Não envie: confira o pagamento.';
   end if;
+  if novo_status in ('pago', 'enviado', 'entregue') and exists (
+       select 1 from pedidos where id = pedido
+          and pagamento_status in ('refunded', 'charged_back', 'in_mediation', 'partially_refunded')) then
+    raise exception 'Pagamento estornado ou em disputa no Mercado Pago. Não envie: confira o pagamento.';
+  end if;
 
-  update pedidos set status = novo_status, atualizado_em = now() where id = pedido;
+  -- voltar (ou reabrir) para 'novo' segura o par por 24 h, como uma venda nova do painel; sem prazo ele ficaria preso
+  update pedidos set status = novo_status, atualizado_em = now(),
+         expira_em = case when novo_status = 'novo' and (expira_em is null or expira_em < now())
+                          then now() + interval '24 hours' else expira_em end
+   where id = pedido;
 
   if novo_status = 'cancelado' then
     update estoque set status = 'disponivel', pedido_id = null, reservado_ate = null, atualizado_em = now()
@@ -290,7 +364,8 @@ begin
     end if;
     update estoque
        set status = case when novo_status = 'novo' then 'reservado' else 'vendido' end,
-           pedido_id = pedido, reservado_ate = null, atualizado_em = now()
+           pedido_id = pedido, atualizado_em = now(),
+           reservado_ate = case when novo_status = 'novo' then (select p.expira_em from pedidos p where p.id = pedido) end
      where slug = any(slugs);
   end if;
 end;
@@ -307,6 +382,9 @@ begin
   if novo_status not in ('disponivel', 'reservado', 'vendido') then
     raise exception 'Situação inválida: %', novo_status;
   end if;
+  if novo_status = 'reservado' and horas is not null and horas <= 0 then
+    raise exception 'Informe as horas da reserva (1 ou mais).';
+  end if;
   if exists (select 1 from estoque where slug = par and pedido_id is not null and status <> 'disponivel') then
     raise exception 'Este par está preso a um pedido. Mude a situação pelo pedido.';
   end if;
@@ -322,7 +400,9 @@ end;
 $$;
 
 -- Pagamento aprovado (aviso do Mercado Pago, volta da cliente ou conferência diária; sempre com a chave de serviço).
--- Devolve 'ok', 'ja_pago' (pedido já pago, ou este mesmo pagamento já tratado: nada a avisar) ou 'conflito' (conferir:
+-- Devolve 'ok', 'ja_pago' (este mesmo pagamento já tratado: nada a avisar), 'dobro' (outro pagamento aprovado num
+-- pedido que já estava pago: anota, marca aviso_pendente = 'dobro' e a equipe reembolsa), 'pago_no_painel' (pedido
+-- marcado como pago à mão: liga o pagamento e pede conferência) ou 'conflito' (conferir:
 -- par já foi para outra cliente, pedido cancelado pela equipe ou valor pago menor que o total). Em 'conflito' o pedido
 -- NÃO vira pago e ganha uma observação para a equipe. Todo pagamento tratado entra em pagamentos_vistos, então o
 -- aviso repetido (mesmo depois de outro caminho trocar pagamento_status) não anota nem avisa de novo.
@@ -341,10 +421,26 @@ declare
 begin
   select * into ped from pedidos where id = pedido for update;
   if ped.id is null then raise exception 'Pedido % não encontrado.', pedido; end if;
-  if ped.status in ('pago', 'enviado', 'entregue') then return 'ja_pago'; end if;
   -- o mesmo pagamento de novo (o Mercado Pago repete o aviso; a volta da cliente e a conferência também consultam):
   -- já foi tratado e avisado. 'ja_pago' é o valor que o código novo e o antigo entendem como "não avisar".
-  if id_pagamento = any(ped.pagamentos_vistos) then return 'ja_pago'; end if;
+  if id_pagamento = any(ped.pagamentos_vistos) or id_pagamento = ped.pagamento_id then return 'ja_pago'; end if;
+  if ped.status in ('pago', 'enviado', 'entregue') and ped.pagamento_id is null then
+    -- marcado como pago à mão no painel (ex.: a equipe viu o pagamento antes do aviso): liga este pagamento ao pedido
+    -- e pede para a equipe conferir se é o mesmo dinheiro ou se a cliente pagou duas vezes
+    update pedidos set pagamento_id = id_pagamento, pagamento_status = 'approved', aviso_pendente = 'conferir',
+           pagamentos_vistos = array_append(pagamentos_vistos, id_pagamento), atualizado_em = now(),
+           observacoes = trim(both ' ' from coalesce(observacoes, '') || format(' ATENÇÃO: pagamento %s aprovado no Mercado Pago num pedido já marcado como pago no painel. Conferir se a cliente pagou duas vezes.', id_pagamento))
+     where id = pedido;
+    return 'pago_no_painel';
+  end if;
+  if ped.status in ('pago', 'enviado', 'entregue') then
+    -- a cliente pagou de novo um pedido já pago: o dinheiro está retido, a equipe precisa reembolsar
+    update pedidos set aviso_pendente = 'dobro', pagamentos_vistos = array_append(pagamentos_vistos, id_pagamento),
+           atualizado_em = now(),
+           observacoes = trim(both ' ' from coalesce(observacoes, '') || format(' ATENÇÃO: pagamento %s aprovado em dobro (o pedido já estava pago). Reembolsar no Mercado Pago.', id_pagamento))
+     where id = pedido;
+    return 'dobro';
+  end if;
 
   if valor is null or valor + 0.01 < ped.total then
     update pedidos set pagamento_id = id_pagamento, pagamento_status = 'valor_divergente', aviso_pendente = 'conferir',
@@ -377,7 +473,10 @@ begin
   end if;
 
   update pedidos set status = 'pago', pagamento_id = id_pagamento, pagamento_status = 'approved', aviso_pendente = 'pago',
-         pagamentos_vistos = array_append(pagamentos_vistos, id_pagamento), expira_em = null, atualizado_em = now()
+         pagamentos_vistos = array_append(pagamentos_vistos, id_pagamento), expira_em = null, atualizado_em = now(),
+         observacoes = case when valor > ped.total + 0.01
+           then trim(both ' ' from coalesce(observacoes, '') || format(' ATENÇÃO: pagamento de R$ %s, R$ %s a mais que o total. Conferir se devolve a diferença.', valor, valor - ped.total))
+           else observacoes end
    where id = pedido;
   update estoque set status = 'vendido', pedido_id = pedido, reservado_ate = null, atualizado_em = now()
    where slug = any(slugs);
@@ -387,7 +486,10 @@ $$;
 
 -- Pagamento do site recusado/cancelado: cancela o pedido (se ainda não foi pago) e devolve os pares.
 -- Pagamento aprovado de pedido em conflito continua registrado (como em cancelar_expirados).
-create or replace function public.cancelar_pedido_site(pedido bigint, situacao text)
+-- Com id_pagamento: a recusa de OUTRA tentativa (ex.: cartão recusado depois de a cliente gerar o Pix) não cancela o
+-- pedido enquanto o pagamento registrado nele ainda vale (Pix pendente, cartão em análise, aprovado).
+drop function if exists public.cancelar_pedido_site(bigint, text);
+create or replace function public.cancelar_pedido_site(pedido bigint, situacao text, id_pagamento text default null)
 returns void
 language plpgsql
 security invoker
@@ -396,7 +498,9 @@ as $$
 begin
   update pedidos set status = 'cancelado', atualizado_em = now(),
          pagamento_status = case when pagamento_status in ('approved', 'valor_divergente') then pagamento_status else situacao end
-   where id = pedido and origem = 'site' and status = 'novo';
+   where id = pedido and origem = 'site' and status = 'novo'
+     and not (id_pagamento is not null and pagamento_id is not null and pagamento_id <> id_pagamento
+              and coalesce(pagamento_status, '') in ('pending', 'in_process', 'authorized', 'approved', 'valor_divergente'));
   if found then
     update estoque set status = 'disponivel', pedido_id = null, reservado_ate = null, atualizado_em = now()
      where pedido_id = pedido and status = 'reservado';
@@ -429,7 +533,7 @@ begin
 
   if id_pagamento is not null and ped.pagamento_id is not null and ped.pagamento_id <> id_pagamento
      and (ped.status not in ('pago', 'enviado', 'entregue')
-          or ped.pagamento_status in ('approved', 'valor_divergente', 'refunded', 'charged_back', 'in_mediation')) then
+          or ped.pagamento_status in ('approved', 'valor_divergente', 'refunded', 'charged_back', 'in_mediation', 'partially_refunded')) then
     nota := format('Pagamento extra %s ficou %s no Mercado Pago; o pedido continua valendo.', id_pagamento, situacao);
     if ped.status in ('pago', 'enviado', 'entregue') and position(nota in coalesce(ped.observacoes, '')) = 0 then
       update pedidos set observacoes = trim(both ' ' from coalesce(observacoes, '') || ' ' || nota), atualizado_em = now()
@@ -453,18 +557,67 @@ begin
 end;
 $$;
 
+-- Trava no banco para quem entra com a sessão do navegador (equipe no painel): os dados do pagamento são do sistema
+-- (aviso do Mercado Pago, com a chave de serviço). Assim, nem direto pela API do Supabase dá para marcar como pago um
+-- pedido do site sem pagamento aprovado, nem mandar um pedido com pagamento estornado.
+create or replace function public.proteger_pagamento()
+returns trigger
+language plpgsql
+security invoker
+set search_path = public
+as $$
+begin
+  if current_user not in ('authenticated', 'anon') then return new; end if;
+
+  if tg_op = 'INSERT' then
+    if new.origem = 'site' or new.pagamento_id is not null or new.pagamento_status is not null
+       or coalesce(array_length(new.pagamentos_vistos, 1), 0) > 0 then
+      raise exception 'Pedido do site e dados de pagamento só o sistema cria.';
+    end if;
+    return new;
+  end if;
+
+  -- cancelar_expirados (que o painel também roda) só pode marcar 'expirado' ao cancelar um pedido vencido
+  if new.origem is distinct from old.origem or new.codigo_publico is distinct from old.codigo_publico
+     or new.pagamento_id is distinct from old.pagamento_id
+     or new.pagamentos_vistos is distinct from old.pagamentos_vistos
+     or (new.pagamento_status is distinct from old.pagamento_status
+         and not (old.status = 'novo' and new.status = 'cancelado' and new.pagamento_status = 'expirado')) then
+    raise exception 'Os dados do pagamento deste pedido só o sistema muda.';
+  end if;
+
+  if new.status in ('pago', 'enviado', 'entregue') and new.status is distinct from old.status then
+    if new.origem = 'site' and coalesce(new.pagamento_status, '') <> 'approved' then
+      raise exception 'Pedido do site sem pagamento aprovado no Mercado Pago. Não envie: confira o pagamento.';
+    end if;
+    if new.pagamento_status in ('refunded', 'charged_back', 'in_mediation', 'partially_refunded') then
+      raise exception 'Pagamento estornado ou em disputa no Mercado Pago. Não envie: confira o pagamento.';
+    end if;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists proteger_pagamento on public.pedidos;
+create trigger proteger_pagamento before insert or update on public.pedidos
+  for each row execute function public.proteger_pagamento();
+
 grant execute on function public.par_livre(public.estoque) to anon, authenticated;
 grant execute on function public.registrar_estorno(bigint, text, text) to service_role;
 revoke execute on function public.registrar_estorno(bigint, text, text) from public, anon, authenticated;
 grant execute on function public.cancelar_expirados() to authenticated, service_role;
 grant execute on function public.criar_pedido(jsonb) to service_role;
 grant execute on function public.confirmar_pagamento(bigint, text, numeric) to service_role;
-grant execute on function public.cancelar_pedido_site(bigint, text) to service_role;
+grant execute on function public.cancelar_pedido_site(bigint, text, text) to service_role;
+grant execute on function public.substituir_pedidos_site(bigint, text) to service_role;
+grant execute on function public.pedidos_substituiveis(text, text, text, bigint) to service_role;
 grant execute on function public.reservar_pedido(bigint) to service_role;
 revoke execute on function public.reservar_pedido(bigint) from public, anon, authenticated;
 revoke execute on function public.cancelar_expirados() from public, anon;
 revoke execute on function public.confirmar_pagamento(bigint, text, numeric) from public, anon, authenticated;
-revoke execute on function public.cancelar_pedido_site(bigint, text) from public, anon, authenticated;
+revoke execute on function public.cancelar_pedido_site(bigint, text, text) from public, anon, authenticated;
+revoke execute on function public.substituir_pedidos_site(bigint, text) from public, anon, authenticated;
+revoke execute on function public.pedidos_substituiveis(text, text, text, bigint) from public, anon, authenticated;
 grant execute on function public.criar_pedido(jsonb) to authenticated;
 grant execute on function public.atualizar_pedido(bigint, text) to authenticated;
 grant execute on function public.definir_estoque(text, text, int) to authenticated;

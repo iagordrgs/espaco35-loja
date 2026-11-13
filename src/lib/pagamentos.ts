@@ -19,7 +19,8 @@ import { SITE_URL } from "@/lib/site";
 const PENDENTES = ["pending", "in_process", "authorized"];
 // Antes de pagar: cancela o pedido e devolve os pares. Depois de pago: marca "NÃO ENVIAR" e avisa a equipe.
 const RECUSADOS = ["rejected", "cancelled"];
-const ESTORNOS = ["refunded", "charged_back", "in_mediation"];
+// partially_refunded: o Mercado Pago devolveu parte do valor (o pagamento continua "approved", com esse detalhe)
+const ESTORNOS = ["refunded", "charged_back", "in_mediation", "partially_refunded"];
 export const PAGOS = ["pago", "enviado", "entregue"];
 // situações de um pagamento que foi aprovado e ficou registrado no pedido (depois pode ter virado estorno)
 const REGISTRADOS = ["approved", "valor_divergente", ...ESTORNOS];
@@ -30,8 +31,8 @@ const AVISO_ESPERA_MIN = 10; // aviso pendente mais novo que isso pode estar sai
 const AVISO_DIAS = 7; // depois disso a conferência para de reenviar o e-mail (o painel continua mostrando)
 
 export type Origem = "aviso" | "retorno" | "conferencia";
-type Aviso = "pago" | "conferir" | "estorno";
-type PedidoResumo = { id: number; status: string; pagamento_id: string | null; pagamento_status: string | null };
+type Aviso = "pago" | "conferir" | "estorno" | "dobro";
+type PedidoResumo = { id: number; status: string; pagamento_id: string | null; pagamento_status: string | null; pagamentos_vistos?: string[] };
 export type ResumoConferencia = {
   pagamentos: number;
   acertados: string[];
@@ -76,13 +77,17 @@ export async function processarPagamento(admin: SupabaseClient, pagamento: Pagam
   const idPedido = Number(pagamento.external_reference);
   if (!Number.isSafeInteger(idPedido) || idPedido <= 0) return "sem_pedido";
   const idPagamento = String(pagamento.id);
+  // estorno parcial chega como "approved" com status_detail "partially_refunded": vale como estorno
+  const situacao = pagamento.status === "approved" && pagamento.status_detail === "partially_refunded" ? "partially_refunded" : pagamento.status;
   let resultado: string;
 
-  if (pagamento.status === "approved") {
+  if (situacao === "approved") {
     // o banco confere se o valor cobre o total do pedido; moeda diferente de real conta como valor inválido
     const valor = pagamento.currency_id === "BRL" ? Number(pagamento.transaction_amount) : null;
     resultado = (await rpc(admin, "confirmar_pagamento", { pedido: idPedido, id_pagamento: idPagamento, valor })) ?? "";
-    if (resultado === "ok" || resultado === "conflito") await enviarAviso(admin, idPedido, resultado === "ok" ? "pago" : "conferir");
+    if (resultado === "ok") await enviarAviso(admin, idPedido, "pago", { valorPago: valor });
+    else if (resultado === "conflito" || resultado === "pago_no_painel") await enviarAviso(admin, idPedido, "conferir");
+    else if (resultado === "dobro") await enviarAviso(admin, idPedido, "dobro", { idPagamento, valorPago: valor });
   } else if (PENDENTES.includes(pagamento.status)) {
     resultado = (await rpc(admin, "reservar_pedido", { pedido: idPedido })) ?? "";
     if (resultado === "indisponivel") {
@@ -95,18 +100,19 @@ export async function processarPagamento(admin: SupabaseClient, pagamento: Pagam
       await anotarSituacao(admin, idPedido, pagamento);
     }
   } else if (RECUSADOS.includes(pagamento.status)) {
-    await rpc(admin, "cancelar_pedido_site", { pedido: idPedido, situacao: pagamento.status });
+    // com o id: a recusa de outra tentativa não derruba o pedido com Pix pendente ou pagamento valendo
+    await rpc(admin, "cancelar_pedido_site", { pedido: idPedido, situacao: pagamento.status, id_pagamento: idPagamento });
     resultado = "cancelado";
-  } else if (ESTORNOS.includes(pagamento.status)) {
-    const antes = await registrarEstorno(admin, idPedido, pagamento.status, idPagamento);
+  } else if (ESTORNOS.includes(situacao)) {
+    const antes = await registrarEstorno(admin, idPedido, situacao, idPagamento);
     if (antes === "outro_pagamento") {
       // estorno do pagamento extra de quem pagou duas vezes: o pedido continua valendo
       resultado = "estorno_de_outro_pagamento";
     } else if (antes) {
-      await enviarAviso(admin, idPedido, "estorno", pagamento.status);
+      await enviarAviso(admin, idPedido, "estorno", { situacao });
       resultado = "estorno_registrado";
     } else {
-      if (pagamento.status !== "in_mediation") await rpc(admin, "cancelar_pedido_site", { pedido: idPedido, situacao: pagamento.status });
+      if (situacao !== "in_mediation") await rpc(admin, "cancelar_pedido_site", { pedido: idPedido, situacao, id_pagamento: idPagamento });
       resultado = "estorno_sem_pedido_pago";
     }
   } else {
@@ -116,7 +122,7 @@ export async function processarPagamento(admin: SupabaseClient, pagamento: Pagam
 
   revalidateTag(TAG_ESTOQUE, { expire: 0 }); // expira já: o par vendido não pode aparecer nem uma vez a mais
   revalidatePath("/painel", "layout");
-  registrar("info", "pagamento processado", { origem, pedido: idPedido, pagamento: idPagamento, situacao: pagamento.status, resultado });
+  registrar("info", "pagamento processado", { origem, pedido: idPedido, pagamento: idPagamento, situacao, resultado });
   return resultado;
 }
 
@@ -134,20 +140,24 @@ async function registrarEstorno(admin: SupabaseClient, idPedido: number, situaca
   return rpc(admin, "registrar_estorno", { pedido: idPedido, situacao });
 }
 
-// Pedido ainda aguardando: guarda a situação do pagamento (Pix gerado, cartão em análise...).
+// Pedido ainda aguardando: guarda a situação do pagamento (Pix gerado, cartão em análise...). Não apaga um pagamento
+// aprovado já registrado no pedido (ex.: valor divergente, com o dinheiro retido): esse registro é o que a equipe confere.
 async function anotarSituacao(admin: SupabaseClient, idPedido: number, pagamento: Pagamento) {
   const { error } = await admin
     .from("pedidos")
     .update({ pagamento_status: pagamento.status, pagamento_id: String(pagamento.id) })
     .eq("id", idPedido)
-    .eq("status", "novo");
+    .eq("status", "novo")
+    .or("pagamento_status.is.null,pagamento_status.not.in.(approved,valor_divergente)");
   if (error) throw new ErroBanco("anotar situação do pagamento", error);
 }
 
 // E-mail para a equipe. Nunca lança: o pedido já mudou no banco e aparece no painel. Com o schema.sql atualizado,
 // o banco marca o aviso em aviso_pendente junto com a mudança do pedido; ele só sai da marca quando o e-mail sai,
 // e a conferência diária reenvia o que ficou marcado.
-async function enviarAviso(admin: SupabaseClient, idPedido: number, tipo: Aviso, situacao?: string): Promise<boolean> {
+type Detalhes = { situacao?: string; valorPago?: number | null; idPagamento?: string };
+
+async function enviarAviso(admin: SupabaseClient, idPedido: number, tipo: Aviso, detalhes: Detalhes = {}): Promise<boolean> {
   try {
     const { data: p, error } = await admin.from("pedidos").select("*").eq("id", idPedido).single();
     if (error) throw new ErroBanco("ler o pedido para o aviso", error);
@@ -157,16 +167,21 @@ async function enviarAviso(admin: SupabaseClient, idPedido: number, tipo: Aviso,
       if (temMarca) await limparMarca(admin, idPedido, tipo);
       return false;
     }
-    const estorno = situacao ?? p.pagamento_status;
+    const estorno = detalhes.situacao ?? p.pagamento_status;
+    const aMais = tipo === "pago" && detalhes.valorPago != null && detalhes.valorPago > Number(p.total) + 0.01 ? detalhes.valorPago - Number(p.total) : 0;
     const e = p.endereco ?? {};
     const itens = (p.itens as ItemPedido[]).map((i) => `<li>${escapar(i.nome)} (${escapar(i.codigo)}) · ${reais(i.preco)}</li>`).join("");
     const assunto = {
-      pago: `Novo pedido pago #${p.id} · ${p.cliente_nome} · ${reais(p.total)}`,
+      pago: `Novo pedido pago #${p.id} · ${p.cliente_nome} · ${reais(p.total)}${aMais ? " · pago a mais" : ""}`,
       conferir: `⚠️ CONFERIR pedido #${p.id} antes de enviar · ${p.cliente_nome}`,
       estorno: `⛔ NÃO ENVIAR pedido #${p.id}: pagamento ${estorno} no Mercado Pago`,
+      dobro: `⚠️ Pagamento em dobro no pedido #${p.id}: reembolsar · ${p.cliente_nome}`,
     }[tipo];
     const alerta = {
-      pago: "",
+      pago: aMais
+        ? `<p><strong>Atenção:</strong> a cliente pagou ${reais(detalhes.valorPago!)}, ${reais(aMais)} a mais que o total. Confira se é para devolver a diferença.</p>`
+        : "",
+      dobro: `<p><strong>Pagamento em dobro.</strong> O pedido já estava pago e chegou outro pagamento aprovado${detalhes.idPagamento ? ` (${escapar(detalhes.idPagamento)}${detalhes.valorPago != null ? `, ${reais(detalhes.valorPago)}` : ""})` : ""}. Reembolse esse pagamento no Mercado Pago. Não envie outro par.</p>`,
       conferir: `<p><strong>Atenção:</strong> ${escapar(p.observacoes)} O pedido não foi marcado como pago.</p>`,
       estorno: `<p><strong>NÃO ENVIAR.</strong> O pagamento ficou "${escapar(estorno)}" no Mercado Pago (estorno, devolução ou disputa). Se já foi enviado, responda a disputa no Mercado Pago com o código de rastreio.</p>`,
     }[tipo];
@@ -208,6 +223,7 @@ function avisoAindaVale(tipo: string, status: string, situacao: string | null) {
   if (tipo === "pago") return status === "pago" && situacao === "approved";
   if (tipo === "conferir") return !PAGOS.includes(status) && !ESTORNOS.includes(situacao ?? "");
   if (tipo === "estorno") return PAGOS.includes(status) && ESTORNOS.includes(situacao ?? "");
+  if (tipo === "dobro") return PAGOS.includes(status);
   return false;
 }
 
@@ -256,10 +272,14 @@ async function acertarPagamentos(admin: SupabaseClient, agora: Date, resumo: Res
   const pedidos = new Map(((data ?? []) as PedidoResumo[]).map((p) => [p.id, p]));
 
   // do mais antigo para o mais recente: se um pedido teve dois pagamentos, vale a ordem em que mudaram
-  for (const pagamento of [...pagamentos].reverse()) {
+  for (const recebido of [...pagamentos].reverse()) {
+    // estorno parcial chega como "approved" com esse detalhe: para a conferência, vale como estorno
+    const pagamento = recebido.status === "approved" && recebido.status_detail === "partially_refunded" ? { ...recebido, status: "partially_refunded" } : recebido;
     const pedido = pedidos.get(Number(pagamento.external_reference));
     if (!pedido) continue;
     const idPagamento = String(pagamento.id);
+    // pagamento a mais num pedido já pago que o banco já tratou (e-mail de pagamento em dobro já saiu): não repete
+    if (pagamento.status === "approved" && PAGOS.includes(pedido.status) && pedido.pagamentos_vistos?.includes(idPagamento)) continue;
     if (pagamento.status === "approved" && PAGOS.includes(pedido.status) && pedido.pagamento_id !== idPagamento) {
       resumo.suspeitas.push(
         pedido.pagamento_id && pedido.pagamento_status === "approved"
@@ -321,8 +341,16 @@ async function reenviarAvisos(admin: SupabaseClient, agora: Date, erros: string[
   }
   let enviados = 0;
   for (const p of (data ?? []) as { id: number; status: string; pagamento_status: string | null; aviso_pendente: string }[]) {
-    if (!avisoAindaVale(p.aviso_pendente, p.status, p.pagamento_status)) await limparMarca(admin, p.id, p.aviso_pendente);
-    else if (await enviarAviso(admin, p.id, p.aviso_pendente as Aviso)) enviados++;
+    if (!avisoAindaVale(p.aviso_pendente, p.status, p.pagamento_status)) {
+      await limparMarca(admin, p.id, p.aviso_pendente);
+      continue;
+    }
+    // pega o aviso para si antes de mandar: duas conferências juntas não mandam o mesmo e-mail duas vezes
+    const { data: pegou } = await admin.from("pedidos").update({ aviso_pendente: null }).eq("id", p.id).eq("aviso_pendente", p.aviso_pendente).select("id");
+    if (!pegou?.length) continue;
+    if (await enviarAviso(admin, p.id, p.aviso_pendente as Aviso)) enviados++;
+    // não saiu: devolve a marca para a próxima conferência tentar (se nenhum aviso mais novo marcou no meio)
+    else await admin.from("pedidos").update({ aviso_pendente: p.aviso_pendente }).eq("id", p.id).is("aviso_pendente", null);
   }
   return enviados;
 }

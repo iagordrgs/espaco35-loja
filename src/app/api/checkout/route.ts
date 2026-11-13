@@ -9,7 +9,7 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 
 const RESERVA_MINUTOS = 30;
 const MAX_PARES = 5; // mais que isso no site vira conversa com a equipe (e o atacado é pelo WhatsApp)
-const MAX_RESERVAS_POR_IP = 2; // freia quem tenta travar o estoque criando pedidos sem pagar
+const MAX_POR_CONEXAO = 2; // freia quem tenta travar o estoque criando pedidos sem pagar (o banco confere)
 
 // Só o hash do IP vai para o banco, nunca o IP em si.
 function hashIp(request: Request) {
@@ -44,26 +44,13 @@ export async function POST(request: Request) {
   if (!numero) return erro("Informe o número do endereço.");
   if (complemento.length < 2) return erro("Informe o complemento (apartamento e bloco, ou casa).");
 
-  // Limites contra quem quer travar o estoque sem pagar: no máximo 2 reservas abertas por aparelho/rede.
-  // A mesma cliente (e-mail ou WhatsApp) tentando de novo: a reserva anterior é cancelada e os pares voltam.
+  // Pedido anterior da mesma cliente: o banco decide qual o novo substitui (o do código que este navegador mandou, ou
+  // um da mesma cliente ainda sem Pix) e só cancela DEPOIS que o link do Mercado Pago sair. Se algo falhar antes,
+  // o pedido anterior continua como estava. O limite de pedidos abertos por conexão também é conferido no banco,
+  // um pedido por vez, para dois cliques juntos não passarem.
   const ipHash = hashIp(request);
-  await admin.rpc("cancelar_expirados");
-  const { data: abertos } = await admin.from("pedidos").select("id,cliente_email,cliente_telefone,cliente_ip_hash")
-    .eq("origem", "site").eq("status", "novo").gt("expira_em", new Date().toISOString());
-  const digitos = telefone.replace(/\D/g, "");
-  // Pedido anterior deste mesmo navegador (o código público é secreto: quem tem, abriu o pedido).
-  const substituir = texto(corpo?.substituir, 40);
-  if (/^[0-9a-f-]{36}$/i.test(substituir)) {
-    const { data: anterior } = await admin.from("pedidos").select("id").eq("codigo_publico", substituir).eq("origem", "site").eq("status", "novo").maybeSingle();
-    if (anterior) await admin.rpc("cancelar_pedido_site", { pedido: anterior.id, situacao: "substituido" });
-  }
-  for (const p of abertos ?? []) {
-    if (p.cliente_email?.toLowerCase() === email.toLowerCase() || (p.cliente_telefone ?? "").replace(/\D/g, "") === digitos) {
-      await admin.rpc("cancelar_pedido_site", { pedido: p.id, situacao: "substituido" });
-    }
-  }
-  const doMesmoIp = (abertos ?? []).filter((p) => p.cliente_ip_hash === ipHash && p.cliente_email?.toLowerCase() !== email.toLowerCase()).length;
-  if (doMesmoIp >= MAX_RESERVAS_POR_IP) return erro("Já existem pedidos aguardando pagamento a partir desta conexão. Conclua um deles ou fale com a equipe pelo WhatsApp.", 429);
+  const substituirCodigo = texto(corpo?.substituir, 40);
+  const substituir = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(substituirCodigo) ? substituirCodigo : null;
 
   const cotacao = await cotarFrete(soDigitos(texto(corpo?.endereco?.cep, 12)), pares.map((p) => p.price ?? 0));
   if (!cotacao.endereco) return erro(cotacao.aviso ?? "CEP inválido.");
@@ -101,9 +88,13 @@ export async function POST(request: Request) {
       entrega: `${frete.nome} · ${frete.prazo}`,
       vendedor: "Site",
       cliente_ip_hash: ipHash,
+      substituir,
+      max_por_conexao: MAX_POR_CONEXAO,
     },
   });
   if (error) {
+    if (error.message.startsWith("Limite de pedidos abertos"))
+      return erro("Já existem pedidos aguardando pagamento a partir desta conexão. Conclua um deles ou fale com a equipe pelo WhatsApp.", 429);
     return erro(error.message.startsWith("Par indisponível") ? "Um dos pares acabou de ser reservado por outra cliente. Volte à sacola e confira." : "Não foi possível criar o pedido agora. Tente de novo ou finalize pelo WhatsApp.", 409);
   }
 
@@ -132,6 +123,9 @@ export async function POST(request: Request) {
       notification_url: `${SITE_URL}/api/mercadopago/webhook`,
       expiration_date_to: new Date(Date.now() + RESERVA_MINUTOS * 60_000).toISOString(),
     });
+    // o link saiu: agora sim os pedidos anteriores que este substitui são cancelados (e os pares deles voltam)
+    const { error: erroSubstituir } = await admin.rpc("substituir_pedidos_site", { novo: idPedido, codigo: substituir });
+    if (erroSubstituir) console.error(`[checkout] pedidos anteriores não substituídos ${JSON.stringify({ pedido: idPedido, erro: erroSubstituir.message })}`);
     revalidateTag(TAG_ESTOQUE, { expire: 0 }); // um pedido anterior desta cliente pode ter liberado pares
     const usarSandbox = process.env.MERCADOPAGO_SANDBOX === "1" && preferencia.sandbox_init_point;
     return Response.json({ url: usarSandbox ? preferencia.sandbox_init_point : preferencia.init_point, codigo: pedido?.codigo_publico });

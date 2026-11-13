@@ -13,10 +13,17 @@ import { RESERVA_PAINEL_HORAS, STATUS_PEDIDO, type Pedido, type StatusPedido } f
 export type EstadoForm = { erro?: string };
 
 const texto = (form: FormData, campo: string) => String(form.get(campo) ?? "").trim();
-const dinheiro = (form: FormData, campo: string) => {
-  const valor = Number(texto(form, campo).replace(/\./g, "").replace(",", ".") || 0);
+// Valor digitado no painel: "15,90", "1.234,50" e também "15.90" (ponto como vírgula). Ponto só é separador de
+// milhar quando vem seguido de 3 dígitos ("1.500", "12.345.678").
+function lerDinheiro(digitado: string) {
+  const limpo = digitado.replace(/[R$\s]/g, "");
+  const normal = limpo.includes(",")
+    ? limpo.replace(/\./g, "").replace(",", ".")
+    : /^-?\d{1,3}(\.\d{3})+$/.test(limpo) ? limpo.replace(/\./g, "") : limpo;
+  const valor = Number(normal || 0);
   return Number.isFinite(valor) && valor >= 0 ? Math.round(valor * 100) / 100 : 0;
-};
+}
+const dinheiro = (form: FormData, campo: string) => lerDinheiro(texto(form, campo));
 
 // O site e o painel passam a mostrar a situação nova na próxima visita.
 function atualizarTelas() {
@@ -141,6 +148,9 @@ export async function gerarLinkPagamento(form: FormData) {
   const pedido = data as Pedido | null;
   if (!pedido || pedido.status !== "novo" || pedido.origem === "site") {
     redirect(`/painel/pedidos/${id}`);
+  }
+  if (!(Number(pedido.total) > 0)) {
+    throw new Error("Pedido com total R$ 0,00: não há o que cobrar pelo link. Confira o desconto e o frete do pedido.");
   }
 
   const vence = pedido.expira_em && new Date(pedido.expira_em).getTime() > Date.now()
