@@ -13,6 +13,19 @@ npm start       # serve o build
 npm run lint
 ```
 
+## Testes
+
+```bash
+npm test
+```
+
+Roda os testes de integração de checkout, aviso e volta do Mercado Pago, conferência diária, página do pedido, painel e acesso ao banco. Cada teste chama a rota ou a ação do painel de verdade, num banco de teste local: o Supabase no Docker, montado do zero pelo `supabase/schema.sql`. O banco de produção nunca é usado. Só o que é de fora é simulado: Mercado Pago, e-mail (Resend), ViaCEP e Melhor Envio.
+
+- Precisa do **Docker Desktop ligado**. Na primeira vez o `npm test` sobe o Supabase local sozinho, e isso demora alguns minutos para baixar.
+- Rode depois de toda alteração, principalmente as feitas por IA.
+- Teste que falha por bug de verdade fica falhando até o bug ser corrigido. Não se apaga, não se pula e não se afrouxa teste para passar.
+- Para desligar o banco de teste: `npx supabase stop`.
+
 ## O que tem
 
 - **Home** (`/`), **coleção** (`/produtos`, com filtro por categoria) e **página de cada par** (`/produtos/[slug]`: galeria, código E35, preço).
